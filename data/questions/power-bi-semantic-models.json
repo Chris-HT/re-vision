@@ -1,0 +1,409 @@
+{
+  "meta": {
+    "subject": "power-bi",
+    "theme": "semantic-model-setup",
+    "version": 1,
+    "lastUpdated": "2025-02-13"
+  },
+  "categories": {
+    "Relationships": {
+      "color": "#8b5cf6",
+      "bgClass": "bg-purple-500",
+      "lightClass": "bg-purple-50",
+      "borderClass": "border-purple-300",
+      "textClass": "text-purple-700"
+    },
+    "Storage Mode": {
+      "color": "#3b82f6",
+      "bgClass": "bg-blue-500",
+      "lightClass": "bg-blue-50",
+      "borderClass": "border-blue-300",
+      "textClass": "text-blue-700"
+    },
+    "Tables": {
+      "color": "#22c55e",
+      "bgClass": "bg-green-500",
+      "lightClass": "bg-green-50",
+      "borderClass": "border-green-300",
+      "textClass": "text-green-700"
+    },
+    "Data Types": {
+      "color": "#06b6d4",
+      "bgClass": "bg-cyan-500",
+      "lightClass": "bg-cyan-50",
+      "borderClass": "border-cyan-300",
+      "textClass": "text-cyan-700"
+    },
+    "Columns": {
+      "color": "#2563eb",
+      "bgClass": "bg-blue-600",
+      "lightClass": "bg-blue-50",
+      "borderClass": "border-blue-300",
+      "textClass": "text-blue-700"
+    },
+    "Hierarchies": {
+      "color": "#6366f1",
+      "bgClass": "bg-indigo-500",
+      "lightClass": "bg-indigo-50",
+      "borderClass": "border-indigo-300",
+      "textClass": "text-indigo-700"
+    },
+    "Measures": {
+      "color": "#8b5cf6",
+      "bgClass": "bg-violet-500",
+      "lightClass": "bg-violet-50",
+      "borderClass": "border-violet-300",
+      "textClass": "text-violet-700"
+    },
+    "Parameters": {
+      "color": "#eab308",
+      "bgClass": "bg-yellow-500",
+      "lightClass": "bg-yellow-50",
+      "borderClass": "border-yellow-300",
+      "textClass": "text-yellow-700"
+    },
+    "Security": {
+      "color": "#ef4444",
+      "bgClass": "bg-red-500",
+      "lightClass": "bg-red-50",
+      "borderClass": "border-red-300",
+      "textClass": "text-red-700"
+    },
+    "Model Cleanliness": {
+      "color": "#10b981",
+      "bgClass": "bg-emerald-500",
+      "lightClass": "bg-emerald-50",
+      "borderClass": "border-emerald-300",
+      "textClass": "text-emerald-700"
+    },
+    "Performance": {
+      "color": "#14b8a6",
+      "bgClass": "bg-teal-500",
+      "lightClass": "bg-teal-50",
+      "borderClass": "border-teal-300",
+      "textClass": "text-teal-700"
+    }
+  },
+  "questions": [
+    {
+      "id": "sms-001",
+      "category": "Relationships",
+      "question": "What do relationships control in a semantic model?",
+      "answer": "How tables filter one another — they are core to correct, intuitive visuals.",
+      "difficulty": 1,
+      "tags": ["basics"]
+    },
+    {
+      "id": "sms-002",
+      "category": "Relationships",
+      "question": "What is a disconnected table?",
+      "answer": "A table with no relationship to others. Perfect for What-If parameters (sliders, options).",
+      "difficulty": 2,
+      "tags": ["disconnected", "what-if"]
+    },
+    {
+      "id": "sms-003",
+      "category": "Relationships",
+      "question": "What are the requirements for a relationship between two tables?",
+      "answer": "Same data type, matching/overlapping values, and acts like a Primary Key → Foreign Key link.",
+      "difficulty": 1,
+      "tags": ["requirements"]
+    },
+    {
+      "id": "sms-004",
+      "category": "Relationships",
+      "question": "Name the four cardinality types.",
+      "answer": "1↔1, 1↔Many (most common), Many↔1, Many↔Many (use sparingly).",
+      "difficulty": 2,
+      "tags": ["cardinality"]
+    },
+    {
+      "id": "sms-005",
+      "category": "Relationships",
+      "question": "Which cardinality type is most common?",
+      "answer": "One-to-Many (1↔Many).",
+      "difficulty": 1,
+      "tags": ["cardinality"]
+    },
+    {
+      "id": "sms-006",
+      "category": "Relationships",
+      "question": "What is the rule about active relationships between tables?",
+      "answer": "Only ONE active relationship path can exist between any two tables.",
+      "difficulty": 2,
+      "tags": ["active", "inactive"]
+    },
+    {
+      "id": "sms-007",
+      "category": "Relationships",
+      "question": "How do you use an inactive relationship in DAX?",
+      "answer": "Use the USERELATIONSHIP() function to activate it within a measure.",
+      "difficulty": 2,
+      "tags": ["inactive", "dax"]
+    },
+    {
+      "id": "sms-008",
+      "category": "Relationships",
+      "question": "What are role-playing dimensions? Give an example.",
+      "answer": "When a table has multiple columns that could relate to the same dimension (e.g. OrderDate + ShipDate both linking to a Date table). Only one can be active; duplicate Date tables solve this.",
+      "difficulty": 3,
+      "tags": ["role-playing", "dates"]
+    },
+    {
+      "id": "sms-009",
+      "category": "Relationships",
+      "question": "What is the recommended relationship direction and why?",
+      "answer": "Single direction — best for performance and clarity. Bi-directional should be used rarely as it can cause ambiguity.",
+      "difficulty": 2,
+      "tags": ["direction"]
+    },
+    {
+      "id": "sms-010",
+      "category": "Relationships",
+      "question": "When might you use a bi-directional relationship?",
+      "answer": "Rarely — only when needed for specific filtering scenarios. It can cause ambiguity and performance issues.",
+      "difficulty": 2,
+      "tags": ["bi-directional"]
+    },
+    {
+      "id": "sms-011",
+      "category": "Storage Mode",
+      "question": "What are the three storage modes?",
+      "answer": "Import (data in memory), DirectQuery (queries source directly), and Dual (acts as both).",
+      "difficulty": 1,
+      "tags": ["basics"]
+    },
+    {
+      "id": "sms-012",
+      "category": "Storage Mode",
+      "question": "Which storage mode gives the fastest performance?",
+      "answer": "Import — data is stored in memory for fastest query performance.",
+      "difficulty": 1,
+      "tags": ["import"]
+    },
+    {
+      "id": "sms-013",
+      "category": "Storage Mode",
+      "question": "What is DirectQuery and when would you use it?",
+      "answer": "Data is NOT stored locally — queries go directly to the source system. Use when data must be real-time or datasets are too large for import.",
+      "difficulty": 2,
+      "tags": ["directquery"]
+    },
+    {
+      "id": "sms-014",
+      "category": "Storage Mode",
+      "question": "What is Dual storage mode?",
+      "answer": "A table that acts as BOTH Import and DirectQuery. Used in composite models / star schemas for optimal performance.",
+      "difficulty": 3,
+      "tags": ["dual"]
+    },
+    {
+      "id": "sms-015",
+      "category": "Storage Mode",
+      "question": "What is a Composite Model?",
+      "answer": "A model that mixes Import and DirectQuery tables together — a big modern BI capability.",
+      "difficulty": 2,
+      "tags": ["composite"]
+    },
+    {
+      "id": "sms-016",
+      "category": "Tables",
+      "question": "Name 3 places you can configure tables in Power BI.",
+      "answer": "The Ribbon, the Data Pane, and Model View (best for bulk edits).",
+      "difficulty": 1,
+      "tags": ["configuration"]
+    },
+    {
+      "id": "sms-017",
+      "category": "Tables",
+      "question": "What should you ALWAYS do with Auto Date/Time?",
+      "answer": "Turn it OFF. Then create your own Date table and mark it as a Date Table.",
+      "difficulty": 2,
+      "tags": ["dates"]
+    },
+    {
+      "id": "sms-018",
+      "category": "Tables",
+      "question": "Why should you disable Auto Date/Time?",
+      "answer": "It creates hidden auto-generated date tables for every date column, bloating the model. A custom Date table is cleaner and more controllable.",
+      "difficulty": 2,
+      "tags": ["dates", "performance"]
+    },
+    {
+      "id": "sms-019",
+      "category": "Tables",
+      "question": "After creating a custom Date table, what must you do?",
+      "answer": "Mark it as a Date Table in the table properties.",
+      "difficulty": 1,
+      "tags": ["dates"]
+    },
+    {
+      "id": "sms-020",
+      "category": "Data Types",
+      "question": "Why do data types matter in a semantic model?",
+      "answer": "Incorrect types break relationships, and impact performance and compression.",
+      "difficulty": 1,
+      "tags": ["basics"]
+    },
+    {
+      "id": "sms-021",
+      "category": "Data Types",
+      "question": "Name 5 common data types in Power BI.",
+      "answer": "Whole Number, Decimal, Date/Time, Text, Boolean.",
+      "difficulty": 1,
+      "tags": ["basics"]
+    },
+    {
+      "id": "sms-022",
+      "category": "Columns",
+      "question": "What is the naming rule for columns?",
+      "answer": "Column names must be unique within their table. Use clear, meaningful names.",
+      "difficulty": 1,
+      "tags": ["naming"]
+    },
+    {
+      "id": "sms-023",
+      "category": "Columns",
+      "question": "Month names sort alphabetically. How do you fix this?",
+      "answer": "Add a Month Number column, then set Sort by Column on the month name column to sort by the number column.",
+      "difficulty": 2,
+      "tags": ["sort-by-column"]
+    },
+    {
+      "id": "sms-024",
+      "category": "Columns",
+      "question": "What are Data Categories and when are they required?",
+      "answer": "Metadata that describes column content. Required for Maps (Lat/Long). Useful categories include Image URL, Web URL, and Address.",
+      "difficulty": 2,
+      "tags": ["data-categories"]
+    },
+    {
+      "id": "sms-025",
+      "category": "Columns",
+      "question": "What should you set as the default summarisation for ID columns?",
+      "answer": "Don't Summarise — IDs should never be summed, averaged, etc.",
+      "difficulty": 2,
+      "tags": ["summarisation"]
+    },
+    {
+      "id": "sms-026",
+      "category": "Columns",
+      "question": "Name 4 default summarisation options.",
+      "answer": "Sum, Average, Min, Max (plus Don't Summarise and Count).",
+      "difficulty": 1,
+      "tags": ["summarisation"]
+    },
+    {
+      "id": "sms-027",
+      "category": "Hierarchies",
+      "question": "What is the purpose of hierarchies?",
+      "answer": "Cleaner drill-down paths and better user experience in visuals.",
+      "difficulty": 1,
+      "tags": ["basics"]
+    },
+    {
+      "id": "sms-028",
+      "category": "Hierarchies",
+      "question": "Give an example of a common hierarchy.",
+      "answer": "Year → Quarter → Month (date hierarchy).",
+      "difficulty": 1,
+      "tags": ["example"]
+    },
+    {
+      "id": "sms-029",
+      "category": "Measures",
+      "question": "What are measures in DAX?",
+      "answer": "Calculated values that compute at query time — they are NOT stored in columns.",
+      "difficulty": 1,
+      "tags": ["basics"]
+    },
+    {
+      "id": "sms-030",
+      "category": "Measures",
+      "question": "What are Quick Measures?",
+      "answer": "Auto-generated DAX templates that help you create common measures without writing DAX manually.",
+      "difficulty": 1,
+      "tags": ["quick-measures"]
+    },
+    {
+      "id": "sms-031",
+      "category": "Measures",
+      "question": "Name 4 properties you can set on a measure.",
+      "answer": "Description, Synonyms, Display Folders, and Hidden/Visible.",
+      "difficulty": 2,
+      "tags": ["properties"]
+    },
+    {
+      "id": "sms-032",
+      "category": "Parameters",
+      "question": "What is the purpose of parameters?",
+      "answer": "Let users dynamically adjust report behaviour at runtime.",
+      "difficulty": 1,
+      "tags": ["basics"]
+    },
+    {
+      "id": "sms-033",
+      "category": "Parameters",
+      "question": "What does a Numeric Range Parameter create?",
+      "answer": "A calculation table with Min/Max/Increment/Default values. Great for What-If analysis (e.g. tax rate slider).",
+      "difficulty": 2,
+      "tags": ["numeric"]
+    },
+    {
+      "id": "sms-034",
+      "category": "Parameters",
+      "question": "What do Fields Parameters allow users to do?",
+      "answer": "Choose fields dynamically — changing the Axis, Metrics, or Categories displayed in visuals.",
+      "difficulty": 2,
+      "tags": ["fields"]
+    },
+    {
+      "id": "sms-035",
+      "category": "Security",
+      "question": "What does Row-Level Security (RLS) do?",
+      "answer": "Restricts which ROWS are visible to specific users. Can use static roles or dynamic roles (using USERNAME()).",
+      "difficulty": 2,
+      "tags": ["rls"]
+    },
+    {
+      "id": "sms-036",
+      "category": "Security",
+      "question": "What is Column-Level Security (CLS)?",
+      "answer": "Hides sensitive COLUMNS from certain users. Less common than RLS but very useful for protecting sensitive data.",
+      "difficulty": 2,
+      "tags": ["cls"]
+    },
+    {
+      "id": "sms-037",
+      "category": "Security",
+      "question": "What is the difference between static and dynamic RLS?",
+      "answer": "Static: hardcoded filter values in roles. Dynamic: uses USERNAME() or USERPRINCIPALNAME() to filter automatically based on who's logged in.",
+      "difficulty": 3,
+      "tags": ["rls", "dynamic"]
+    },
+    {
+      "id": "sms-038",
+      "category": "Model Cleanliness",
+      "question": "Name 4 best practices for model cleanliness.",
+      "answer": "Hide unnecessary columns, use Display Folders, consistent naming conventions, and optionally place measures in a dedicated Measures table.",
+      "difficulty": 1,
+      "tags": ["best-practices"]
+    },
+    {
+      "id": "sms-039",
+      "category": "Performance",
+      "question": "What does 'Assume Referential Integrity' do?",
+      "answer": "Available in DirectQuery — improves performance by using INNER JOINs instead of OUTER JOINs, when you're confident source data is clean.",
+      "difficulty": 3,
+      "tags": ["referential-integrity"]
+    },
+    {
+      "id": "sms-040",
+      "category": "Performance",
+      "question": "What is a Star Schema and why is it preferred?",
+      "answer": "Fact tables in the middle, dimension tables around the outside. Gives clean relationships, fewer issues, and better performance.",
+      "difficulty": 2,
+      "tags": ["star-schema"]
+    }
+  ]
+}

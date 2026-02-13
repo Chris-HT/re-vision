@@ -1,0 +1,594 @@
+{
+  "meta": {
+    "subject": "power-bi",
+    "theme": "dax-calculations",
+    "version": 1,
+    "lastUpdated": "2025-02-13"
+  },
+  "categories": {
+    "DAX Overview": {
+      "color": "#7c3aed",
+      "bgClass": "bg-violet-600",
+      "lightClass": "bg-violet-50",
+      "borderClass": "border-violet-300",
+      "textClass": "text-violet-700"
+    },
+    "Calculated Tables": {
+      "color": "#d946ef",
+      "bgClass": "bg-fuchsia-500",
+      "lightClass": "bg-fuchsia-50",
+      "borderClass": "border-fuchsia-300",
+      "textClass": "text-fuchsia-700"
+    },
+    "Calculated Columns": {
+      "color": "#f97316",
+      "bgClass": "bg-orange-500",
+      "lightClass": "bg-orange-50",
+      "borderClass": "border-orange-300",
+      "textClass": "text-orange-700"
+    },
+    "Implicit Measures": {
+      "color": "#f59e0b",
+      "bgClass": "bg-amber-500",
+      "lightClass": "bg-amber-50",
+      "borderClass": "border-amber-300",
+      "textClass": "text-amber-700"
+    },
+    "Explicit Measures": {
+      "color": "#f43f5e",
+      "bgClass": "bg-rose-500",
+      "lightClass": "bg-rose-50",
+      "borderClass": "border-rose-300",
+      "textClass": "text-rose-700"
+    },
+    "Iterator Functions": {
+      "color": "#0ea5e9",
+      "bgClass": "bg-sky-500",
+      "lightClass": "bg-sky-50",
+      "borderClass": "border-sky-300",
+      "textClass": "text-sky-700"
+    },
+    "CALCULATE Function": {
+      "color": "#dc2626",
+      "bgClass": "bg-red-600",
+      "lightClass": "bg-red-50",
+      "borderClass": "border-red-300",
+      "textClass": "text-red-700"
+    },
+    "Filter Modifiers": {
+      "color": "#ec4899",
+      "bgClass": "bg-pink-500",
+      "lightClass": "bg-pink-50",
+      "borderClass": "border-pink-300",
+      "textClass": "text-pink-700"
+    },
+    "Filter Context": {
+      "color": "#4f46e5",
+      "bgClass": "bg-indigo-600",
+      "lightClass": "bg-indigo-50",
+      "borderClass": "border-indigo-300",
+      "textClass": "text-indigo-700"
+    },
+    "Context Transition": {
+      "color": "#059669",
+      "bgClass": "bg-emerald-600",
+      "lightClass": "bg-emerald-50",
+      "borderClass": "border-emerald-300",
+      "textClass": "text-emerald-700"
+    }
+  },
+  "questions": [
+    {
+      "id": "dax-001",
+      "category": "DAX Overview",
+      "question": "What are the 3 DAX calculation types that complete a model design?",
+      "answer": "Calculated tables, calculated columns, and measures.",
+      "difficulty": 1,
+      "tags": ["basics"]
+    },
+    {
+      "id": "dax-002",
+      "category": "Calculated Tables",
+      "question": "Why would you duplicate a table using DAX?",
+      "answer": "To handle multiple relationships between tables — e.g. creating a separate Ship Date table from a Date table so both OrderDate and ShipDate can have active relationships.",
+      "difficulty": 2,
+      "tags": ["duplicate"]
+    },
+    {
+      "id": "dax-003",
+      "category": "Calculated Tables",
+      "question": "What is the DAX formula to duplicate a Date table as a Ship Date table?",
+      "answer": "Ship Date = 'Date' — this creates a new table replicating the original that refreshes at the same time.",
+      "difficulty": 2,
+      "tags": ["duplicate", "syntax"]
+    },
+    {
+      "id": "dax-004",
+      "category": "Calculated Tables",
+      "question": "What should you do after duplicating a table?",
+      "answer": "Rename the columns so they better describe their purpose in the new table (e.g. 'Ship Year', 'Ship Month').",
+      "difficulty": 1,
+      "tags": ["best-practice"]
+    },
+    {
+      "id": "dax-005",
+      "category": "Calculated Tables",
+      "question": "What is a downside of calculated tables?",
+      "answer": "They increase model storage size and can prolong data refresh times.",
+      "difficulty": 2,
+      "tags": ["performance"]
+    },
+    {
+      "id": "dax-006",
+      "category": "Calculated Tables",
+      "question": "What is a date table required for?",
+      "answer": "Special time filters known as time intelligence functions.",
+      "difficulty": 2,
+      "tags": ["dates"]
+    },
+    {
+      "id": "dax-007",
+      "category": "Calculated Tables",
+      "question": "What does the CALENDARAUTO() function do?",
+      "answer": "Scans all date/datetime columns in the model to find the earliest and latest dates, then generates a complete set of dates spanning that entire range. Returns a single column of dates.",
+      "difficulty": 2,
+      "tags": ["calendarauto"]
+    },
+    {
+      "id": "dax-008",
+      "category": "Calculated Tables",
+      "question": "How do you specify a financial year end month in CALENDARAUTO()?",
+      "answer": "Pass a number 1–12 as an argument, e.g. CALENDARAUTO(6) for a June year-end.",
+      "difficulty": 2,
+      "tags": ["calendarauto"]
+    },
+    {
+      "id": "dax-009",
+      "category": "Calculated Tables",
+      "question": "What is the difference between CALENDARAUTO() and CALENDAR()?",
+      "answer": "CALENDARAUTO scans the model to determine date range automatically. CALENDAR requires you to specify a start and end date explicitly.",
+      "difficulty": 2,
+      "tags": ["calendar"]
+    },
+    {
+      "id": "dax-010",
+      "category": "Calculated Tables",
+      "question": "After creating a calculated date table, what must you do?",
+      "answer": "Mark it as a Date Table — this is required to enable time intelligence functions.",
+      "difficulty": 1,
+      "tags": ["dates"]
+    },
+    {
+      "id": "dax-011",
+      "category": "Calculated Columns",
+      "question": "When should you normally add custom columns — in Power Query or DAX?",
+      "answer": "Power Query is preferred. DAX calculated columns are for specific cases where Power Query can't do the job.",
+      "difficulty": 1,
+      "tags": ["best-practice"]
+    },
+    {
+      "id": "dax-012",
+      "category": "Calculated Columns",
+      "question": "Name 3 scenarios where a DAX calculated column is recommended over Power Query.",
+      "answer": "1) Adding columns to a calculated table, 2) when the formula depends on summarised model data, 3) when specialised DAX modelling functions are needed that aren't available in Power Query M.",
+      "difficulty": 3,
+      "tags": ["when-to-use"]
+    },
+    {
+      "id": "dax-013",
+      "category": "Calculated Columns",
+      "question": "What does a calculated column return?",
+      "answer": "A single value per row — it's like an additional calculation applied to every row in the table.",
+      "difficulty": 1,
+      "tags": ["basics"]
+    },
+    {
+      "id": "dax-014",
+      "category": "Calculated Columns",
+      "question": "What context do calculated columns work with?",
+      "answer": "Row context — they evaluate the formula for each row individually.",
+      "difficulty": 2,
+      "tags": ["row-context"]
+    },
+    {
+      "id": "dax-015",
+      "category": "Calculated Columns",
+      "question": "How do you access data from a related table in a calculated column?",
+      "answer": "Use the RELATED() function (requires an existing relationship between the tables).",
+      "difficulty": 2,
+      "tags": ["related"]
+    },
+    {
+      "id": "dax-016",
+      "category": "Calculated Columns",
+      "question": "If there's no relationship, what function can you use instead of RELATED()?",
+      "answer": "LOOKUPVALUE() — but if a key exists between the tables, it's more efficient to create a relationship and use RELATED() instead, because Power BI stores and indexes data more effectively with relationships.",
+      "difficulty": 3,
+      "tags": ["lookupvalue"]
+    },
+    {
+      "id": "dax-017",
+      "category": "Calculated Columns",
+      "question": "What is the performance impact of calculated columns?",
+      "answer": "They increase storage size and prolong data refresh times, since the value must be calculated and stored for every row.",
+      "difficulty": 2,
+      "tags": ["performance"]
+    },
+    {
+      "id": "dax-018",
+      "category": "Implicit Measures",
+      "question": "What are implicit measures?",
+      "answer": "The default summarisations on a column (e.g. Sum, Average). Shown with a sigma (Σ) symbol in the Data pane for numeric columns.",
+      "difficulty": 1,
+      "tags": ["basics"]
+    },
+    {
+      "id": "dax-019",
+      "category": "Implicit Measures",
+      "question": "What does the sigma (Σ) symbol mean in the Data pane?",
+      "answer": "The column is numeric and its values will be summarised (e.g. summed) by default when added to a visual.",
+      "difficulty": 1,
+      "tags": ["sigma"]
+    },
+    {
+      "id": "dax-020",
+      "category": "Implicit Measures",
+      "question": "Name 2 drawbacks of implicit measures.",
+      "answer": "1) Report authors can change the summarisation, potentially creating misleading visuals. 2) They only work for simple scenarios and cannot handle complex calculations.",
+      "difficulty": 2,
+      "tags": ["drawbacks"]
+    },
+    {
+      "id": "dax-021",
+      "category": "Explicit Measures",
+      "question": "How do you create an explicit measure?",
+      "answer": "Click 'New Measure' in the ribbon, then write a DAX formula that returns a single value.",
+      "difficulty": 1,
+      "tags": ["creating"]
+    },
+    {
+      "id": "dax-022",
+      "category": "Explicit Measures",
+      "question": "When are explicit measures evaluated?",
+      "answer": "At query time — they summarise model data on the fly and must return a single value.",
+      "difficulty": 2,
+      "tags": ["query-time"]
+    },
+    {
+      "id": "dax-023",
+      "category": "Explicit Measures",
+      "question": "What is a simple measure and how does it differ from an implicit measure?",
+      "answer": "A simple measure aggregates values of a single column (e.g. SUM of Sales) just like implicit, but the report author CANNOT alter the summarisation method — it's locked in.",
+      "difficulty": 2,
+      "tags": ["simple"]
+    },
+    {
+      "id": "dax-024",
+      "category": "Explicit Measures",
+      "question": "What is a compound measure? Give an example.",
+      "answer": "A measure that references other measures. E.g. Profit = [Revenue] - [Cost]. This is preferable to a calculated column because it reduces model size and refresh times.",
+      "difficulty": 2,
+      "tags": ["compound"]
+    },
+    {
+      "id": "dax-025",
+      "category": "Explicit Measures",
+      "question": "Why are compound measures preferable to calculated columns for something like Profit?",
+      "answer": "A calculated column computes row-by-row and stores every value. A compound measure only calculates where required at query time, resulting in a smaller model and shorter refresh times.",
+      "difficulty": 3,
+      "tags": ["compound", "performance"]
+    },
+    {
+      "id": "dax-026",
+      "category": "Explicit Measures",
+      "question": "What are Quick Measures in the context of DAX?",
+      "answer": "A visual tool in Power BI that auto-generates DAX expressions for common calculations — you configure them through a UI rather than writing DAX manually.",
+      "difficulty": 1,
+      "tags": ["quick-measures"]
+    },
+    {
+      "id": "dax-027",
+      "category": "Explicit Measures",
+      "question": "Give 4 examples of simple measures.",
+      "answer": "Total Sales (SUM), Yearly Profit, Total Costs, Average Turnover (AVERAGE), Maximum Order Value (MAX).",
+      "difficulty": 1,
+      "tags": ["examples"]
+    },
+    {
+      "id": "dax-028",
+      "category": "Iterator Functions",
+      "question": "What do iterator functions do?",
+      "answer": "Evaluate an expression for EACH ROW in a table, then aggregate the results. Used when simple column totals aren't sufficient.",
+      "difficulty": 2,
+      "tags": ["basics"]
+    },
+    {
+      "id": "dax-029",
+      "category": "Iterator Functions",
+      "question": "When would you use an iterator function instead of a simple aggregate?",
+      "answer": "When column totals aren't sufficient — e.g. row-by-row assessments like ranking, or correctly calculating weighted averages where you need per-row multiplication before summing.",
+      "difficulty": 3,
+      "tags": ["when-to-use"]
+    },
+    {
+      "id": "dax-030",
+      "category": "Iterator Functions",
+      "question": "Give 2 use cases for iterator functions.",
+      "answer": "1) Ranking values across rows. 2) Correctly calculating averages or totals that require a per-row calculation first (e.g. Qty × Price per row, then SUM).",
+      "difficulty": 2,
+      "tags": ["use-cases"]
+    },
+    {
+      "id": "dax-031",
+      "category": "CALCULATE Function",
+      "question": "What does the CALCULATE function do?",
+      "answer": "Modifies the filter context in which an expression is evaluated. It takes an expression that returns a value, plus optional filter arguments.",
+      "difficulty": 1,
+      "tags": ["basics"]
+    },
+    {
+      "id": "dax-032",
+      "category": "CALCULATE Function",
+      "question": "What is the syntax of CALCULATE?",
+      "answer": "CALCULATE(<expression>, [<filter1>], [<filter2>], …) — the expression is essentially a measure, followed by zero or more filter arguments.",
+      "difficulty": 1,
+      "tags": ["syntax"]
+    },
+    {
+      "id": "dax-033",
+      "category": "CALCULATE Function",
+      "question": "What are the two types of filter expressions you can pass to CALCULATE?",
+      "answer": "1) Boolean expression filters — reference a single column, evaluate TRUE/FALSE. 2) Table expression filters — accept a table object or expression (e.g. using FILTER function).",
+      "difficulty": 2,
+      "tags": ["filter-types"]
+    },
+    {
+      "id": "dax-034",
+      "category": "CALCULATE Function",
+      "question": "What are 3 restrictions on Boolean expression filters in CALCULATE?",
+      "answer": "They can only reference columns from a single table, they cannot reference measures, and they cannot use a nested CALCULATE function.",
+      "difficulty": 3,
+      "tags": ["boolean-filter", "restrictions"]
+    },
+    {
+      "id": "dax-035",
+      "category": "CALCULATE Function",
+      "question": "When a CALCULATE filter targets a column NOT already filtered, what happens?",
+      "answer": "CALCULATE adds its filter ON TOP of the existing context. Both the existing filters and the new filter apply together.",
+      "difficulty": 2,
+      "tags": ["filter-behaviour"]
+    },
+    {
+      "id": "dax-036",
+      "category": "CALCULATE Function",
+      "question": "When a CALCULATE filter targets a column that IS already filtered (e.g. by a slicer), what happens?",
+      "answer": "CALCULATE OVERWRITES the existing filter on that same column entirely. The slicer/existing filter is replaced, not combined.",
+      "difficulty": 2,
+      "tags": ["filter-behaviour", "overwrite"]
+    },
+    {
+      "id": "dax-037",
+      "category": "CALCULATE Function",
+      "question": "What are the two standard outcomes when filter expressions are added to CALCULATE? (Critical exam concept)",
+      "answer": "1) Column NOT already filtered → new filter is ADDED alongside existing context. 2) Column IS already filtered → existing filter is OVERWRITTEN (replaced) by the CALCULATE filter.",
+      "difficulty": 3,
+      "tags": ["filter-behaviour", "exam"]
+    },
+    {
+      "id": "dax-038",
+      "category": "CALCULATE Function",
+      "question": "What is the difference between CALCULATE and CALCULATETABLE?",
+      "answer": "CALCULATE modifies filter context for an expression returning a scalar (single value). CALCULATETABLE does the same but for an expression returning a table object.",
+      "difficulty": 2,
+      "tags": ["calculatetable"]
+    },
+    {
+      "id": "dax-039",
+      "category": "CALCULATE Function",
+      "question": "When multiple filter arguments are passed to CALCULATE, how are they combined?",
+      "answer": "They are evaluated using AND logic — all conditions must be TRUE at the same time.",
+      "difficulty": 2,
+      "tags": ["multiple-filters"]
+    },
+    {
+      "id": "dax-040",
+      "category": "CALCULATE Function",
+      "question": "Why is using a Boolean expression filter preferred over a FILTER table expression in CALCULATE?",
+      "answer": "Boolean expressions are more efficient because Import model tables are in-memory column stores optimised to filter columns this way. FILTER should only be used when necessary (e.g. when referencing measures).",
+      "difficulty": 3,
+      "tags": ["performance", "best-practice"]
+    },
+    {
+      "id": "dax-041",
+      "category": "CALCULATE Function",
+      "question": "When MUST you use the FILTER function as a table expression instead of a Boolean filter?",
+      "answer": "When the filter needs to evaluate a measure (measures cannot be referenced in Boolean expressions), or when you need complex column comparisons across tables.",
+      "difficulty": 3,
+      "tags": ["filter-function", "when-to-use"]
+    },
+    {
+      "id": "dax-042",
+      "category": "Filter Modifiers",
+      "question": "What does REMOVEFILTERS do?",
+      "answer": "Removes filters from the filter context. Can target specific columns, a whole table, or all filters. It can only clear filters, NOT return a table.",
+      "difficulty": 2,
+      "tags": ["removefilters"]
+    },
+    {
+      "id": "dax-043",
+      "category": "Filter Modifiers",
+      "question": "In the Revenue % Total Group pattern, how is REMOVEFILTERS used?",
+      "answer": "REMOVEFILTERS is passed to CALCULATE to strip Region and Country filters, so the [Revenue] measure calculates a group total. The current region revenue is then divided by this total using DIVIDE.",
+      "difficulty": 3,
+      "tags": ["removefilters", "pattern"]
+    },
+    {
+      "id": "dax-044",
+      "category": "Filter Modifiers",
+      "question": "What does KEEPFILTERS do?",
+      "answer": "Preserves existing filters in the filter context instead of overwriting them. It makes CALCULATE behave as AND (intersection) rather than replacing the existing filter on the same column.",
+      "difficulty": 2,
+      "tags": ["keepfilters"]
+    },
+    {
+      "id": "dax-045",
+      "category": "Filter Modifiers",
+      "question": "By default, CALCULATE overwrites filters on the same column. How does KEEPFILTERS change this?",
+      "answer": "KEEPFILTERS intersects the new filter with the existing one. Both the slicer/existing filter AND the CALCULATE filter must be satisfied — effectively an AND condition.",
+      "difficulty": 3,
+      "tags": ["keepfilters", "overwrite"]
+    },
+    {
+      "id": "dax-046",
+      "category": "Filter Modifiers",
+      "question": "What does USERELATIONSHIP do when passed to CALCULATE?",
+      "answer": "Activates an inactive model relationship for the duration of that calculation. Used to leverage role-playing dimensions (e.g. using ShipDate instead of OrderDate).",
+      "difficulty": 2,
+      "tags": ["userelationship"]
+    },
+    {
+      "id": "dax-047",
+      "category": "Filter Modifiers",
+      "question": "What does CROSSFILTER do when passed to CALCULATE?",
+      "answer": "Modifies relationship filter direction during evaluation — can change from single to both direction, from both to single, or even disable a relationship entirely. It's an advanced capability.",
+      "difficulty": 3,
+      "tags": ["crossfilter"]
+    },
+    {
+      "id": "dax-048",
+      "category": "Filter Modifiers",
+      "question": "What is the relationship between ALL and REMOVEFILTERS?",
+      "answer": "ALL and its variants can behave as both filter modifiers AND functions that return table objects. If REMOVEFILTERS is supported by your tool, it's better to use REMOVEFILTERS to remove filters (clearer intent).",
+      "difficulty": 3,
+      "tags": ["all", "removefilters"]
+    },
+    {
+      "id": "dax-049",
+      "category": "Filter Context",
+      "question": "What does the VALUES function do?",
+      "answer": "Returns the distinct unique values that exist within the current filter context for a column or table. Similar to UNIQUE in Excel.",
+      "difficulty": 2,
+      "tags": ["values"]
+    },
+    {
+      "id": "dax-050",
+      "category": "Filter Context",
+      "question": "VALUES always returns a table. How do you test if it contains a single value?",
+      "answer": "Use HASONEVALUE (returns TRUE when filtered to one value) or SELECTEDVALUE (returns the single value, or BLANK/alternate if multiple values exist).",
+      "difficulty": 2,
+      "tags": ["hasonevalue", "selectedvalue"]
+    },
+    {
+      "id": "dax-051",
+      "category": "Filter Context",
+      "question": "What does HASONEVALUE return?",
+      "answer": "TRUE when the passed-in column has been filtered down to exactly one value in the current filter context. FALSE otherwise.",
+      "difficulty": 2,
+      "tags": ["hasonevalue"]
+    },
+    {
+      "id": "dax-052",
+      "category": "Filter Context",
+      "question": "What does SELECTEDVALUE return?",
+      "answer": "The single filtered value if exactly one exists, or BLANK (or an alternate value you specify) when multiple values are in filter context.",
+      "difficulty": 2,
+      "tags": ["selectedvalue"]
+    },
+    {
+      "id": "dax-053",
+      "category": "Filter Context",
+      "question": "What does ISFILTERED return?",
+      "answer": "TRUE when a passed-in column reference is DIRECTLY filtered (a filter has been applied to that specific column).",
+      "difficulty": 2,
+      "tags": ["isfiltered"]
+    },
+    {
+      "id": "dax-054",
+      "category": "Filter Context",
+      "question": "What does ISCROSSFILTERED return?",
+      "answer": "TRUE when a column is INDIRECTLY filtered — meaning a filter applied to another column in the same or a related table affects it through relationships.",
+      "difficulty": 2,
+      "tags": ["iscrossfiltered"]
+    },
+    {
+      "id": "dax-055",
+      "category": "Filter Context",
+      "question": "What is the difference between ISFILTERED and ISCROSSFILTERED?",
+      "answer": "ISFILTERED = direct filter on that exact column. ISCROSSFILTERED = indirect filter via another column in the same table or a related table propagating through relationships.",
+      "difficulty": 3,
+      "tags": ["isfiltered", "iscrossfiltered"]
+    },
+    {
+      "id": "dax-056",
+      "category": "Filter Context",
+      "question": "What does ISINSCOPE return?",
+      "answer": "TRUE when a passed-in column is the level in a hierarchy of levels. Used to determine if a value is at a specific drill-down level (e.g. show % only at Region level, not at Total).",
+      "difficulty": 3,
+      "tags": ["isinscope", "hierarchy"]
+    },
+    {
+      "id": "dax-057",
+      "category": "Filter Context",
+      "question": "Why might a Sales Commission measure return BLANK at the Total level when using HASONEVALUE?",
+      "answer": "At the Total level, multiple countries are in filter context, so HASONEVALUE returns FALSE. The IF condition fails, and Revenue is multiplied by BLANK (which returns BLANK). An iterator function is needed to solve this.",
+      "difficulty": 3,
+      "tags": ["hasonevalue", "totals", "pattern"]
+    },
+    {
+      "id": "dax-058",
+      "category": "Context Transition",
+      "question": "What is context transition?",
+      "answer": "The process of converting row context into filter context. This happens when CALCULATE is used within a row context (calculated column or iterator function).",
+      "difficulty": 2,
+      "tags": ["basics"]
+    },
+    {
+      "id": "dax-059",
+      "category": "Context Transition",
+      "question": "What does CALCULATE do when used WITHOUT any filter arguments?",
+      "answer": "It transitions row context to filter context. This is required when a non-measure expression that summarises data needs to be evaluated in row context.",
+      "difficulty": 3,
+      "tags": ["no-filters"]
+    },
+    {
+      "id": "dax-060",
+      "category": "Context Transition",
+      "question": "Consider: CustomerRevenue = SUM(Sales[Sales Amount]) in a calculated column. Why does this return only one value for every row?",
+      "answer": "SUM evaluates in filter context and sums ALL sales, not per-customer. There's no row-level evaluation — it returns the grand total for every row.",
+      "difficulty": 3,
+      "tags": ["problem-scenario"]
+    },
+    {
+      "id": "dax-061",
+      "category": "Context Transition",
+      "question": "How do you fix a calculated column that returns a grand total instead of per-row values?",
+      "answer": "Wrap the aggregation in CALCULATE — e.g. CALCULATE(SUM(Sales[Sales Amount])). CALCULATE transitions the row context to filter context, evaluating the SUM for the current row only.",
+      "difficulty": 3,
+      "tags": ["fix", "calculate-wrap"]
+    },
+    {
+      "id": "dax-062",
+      "category": "Context Transition",
+      "question": "When is context transition automatic (no explicit CALCULATE needed)?",
+      "answer": "When a model MEASURE is referenced in row context — measures automatically trigger context transition. Only non-measure expressions (like SUM) need an explicit CALCULATE wrapper.",
+      "difficulty": 3,
+      "tags": ["automatic"]
+    },
+    {
+      "id": "dax-063",
+      "category": "Context Transition",
+      "question": "If you reference an existing measure like [Total Revenue] in a calculated column, do you need CALCULATE?",
+      "answer": "No — measures already evaluate in filter context and automatically trigger context transition when used in row context.",
+      "difficulty": 3,
+      "tags": ["automatic", "measures"]
+    },
+    {
+      "id": "dax-064",
+      "category": "Context Transition",
+      "question": "How can context transition principles help avoid HASONEVALUE patterns at total levels?",
+      "answer": "By using table-level iterator functions with measures that already transition context automatically. The iterator evaluates per row, and the measure handles the context — providing both detail and totals without HASONEVALUE checks.",
+      "difficulty": 3,
+      "tags": ["iterators", "totals", "advanced"]
+    }
+  ]
+}

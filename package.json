@@ -1,0 +1,22 @@
+{
+  "name": "re-vision",
+  "version": "1.0.0",
+  "description": "Locally-hosted flashcard and dynamic test platform",
+  "main": "server/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "concurrently \"npm run server\" \"npm run client\"",
+    "client": "cd client && npm run dev",
+    "server": "cd server && node --watch index.js",
+    "build": "cd client && npm run build",
+    "start": "node server/index.js",
+    "install-all": "npm install && cd client && npm install && cd ../server && npm install"
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  },
+  "devDependencies": {},
+  "keywords": ["education", "flashcards", "study"],
+  "author": "",
+  "license": "MIT"
+}

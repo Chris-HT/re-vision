@@ -1,0 +1,25 @@
+{
+  "profiles": [
+    {
+      "id": "dad",
+      "name": "Dad",
+      "icon": "👨‍💻",
+      "defaultSubjects": ["power-bi"],
+      "ageGroup": "adult"
+    },
+    {
+      "id": "child1",
+      "name": "Child 1",
+      "icon": "📚",
+      "defaultSubjects": [],
+      "ageGroup": "secondary"
+    },
+    {
+      "id": "child2",
+      "name": "Child 2",
+      "icon": "🎒",
+      "defaultSubjects": [],
+      "ageGroup": "primary"
+    }
+  ]
+}

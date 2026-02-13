@@ -1,0 +1,25 @@
+{
+  "subjects": [
+    {
+      "id": "power-bi",
+      "name": "Power BI PL-300",
+      "icon": "📊",
+      "description": "Microsoft Power BI Data Analyst Certification",
+      "ageGroup": "adult",
+      "themes": [
+        {
+          "id": "semantic-model-setup",
+          "name": "Semantic Model Setup",
+          "color": "from-blue-500 to-cyan-500",
+          "questionFile": "power-bi-semantic-models.json"
+        },
+        {
+          "id": "dax-calculations",
+          "name": "DAX Calculations",
+          "color": "from-purple-500 to-pink-500",
+          "questionFile": "power-bi-dax-calculations.json"
+        }
+      ]
+    }
+  ]
+}
