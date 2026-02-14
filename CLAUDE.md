@@ -13,7 +13,7 @@ RE-VISION is a locally-hosted flashcard and dynamic test platform for a family s
 - **Frontend**: React 18 + Vite, React Router, Tailwind CSS
 - **Backend**: Express.js (ES modules)
 - **Data Storage**: SQLite via better-sqlite3 (single file: `data/revision.db`, gitignored)
-- **AI**: Anthropic Claude API (claude-sonnet-4-5-20250929) for dynamic test generation and auto-marking
+- **AI**: Anthropic Claude API (claude-sonnet-4-5-20250929) for dynamic test generation, auto-marking, and study report generation
 - **Runtime**: Node.js
 - **Production**: PM2 process manager on Raspberry Pi 3 / Zero 2W
 - **Remote Access**: Tailscale (optional, for access outside home network)
@@ -79,7 +79,8 @@ re-vision/
 │   │   ├── subjects.js        # Subjects, themes, questions, categories
 │   │   ├── profiles.js        # User profiles
 │   │   ├── progress.js        # Card progress, history, stats
-│   │   └── cache.js           # Generated question cache
+│   │   ├── cache.js           # Generated question cache
+│   │   └── reports.js         # Test sessions, reports, learning profiles
 │   ├── routes/                # API route handlers
 │   ├── utils/                 # Utility functions (SM-2, streaks)
 │   └── middleware/            # Express middleware
@@ -108,6 +109,8 @@ All data is stored in SQLite (`data/revision.db`) with these tables:
 - **profiles** (user accounts)
 - **card_progress** + **card_history** + **profile_stats** (learning data)
 - **generated_cache** (AI-generated question cache)
+- **test_sessions** + **test_reports** (dynamic test history and AI study reports)
+- **learning_profiles** (cumulative per-user weak/strong area tracking)
 
 The DAL layer (`server/dal/`) provides functions that return JSON shapes matching the original API responses, so the frontend requires zero changes.
 
@@ -118,6 +121,9 @@ See `server/db/schema.sql` for full schema. Key tables:
 - `card_progress`: profile_id, card_id, last_seen, next_due, interval, ease_factor, repetitions
 - `card_history`: profile_id, card_id, date, result (correct/incorrect/skipped)
 - `generated_cache`: cache_key, topic, age_group, difficulty, count, format, generated_at, data (JSON)
+- `test_sessions`: id, profile_id, topic, age_group, difficulty, format, question_count, score, completed_at, questions_data (JSON), answers_data (JSON)
+- `test_reports`: id, session_id (unique), profile_id, report_data (JSON), generated_at
+- `learning_profiles`: profile_id, weak_areas (JSON), strong_areas (JSON), topics_tested (JSON), updated_at
 
 ### Migration
 
@@ -139,6 +145,9 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
 - `POST /api/generate` - Generate questions using Claude API (with caching)
   - Supports formats: `multiple_choice`, `free_text`, `mix`, `flashcard`
 - `POST /api/mark` - Auto-mark free-text answers using Claude API
+- `POST /api/report` - Generate AI study report from test results (saves session, report, and updates learning profile)
+- `GET /api/reports/:profileId` - Get recent test reports for a profile (for Dashboard)
+- `GET /api/learning-profile/:profileId` - Get cumulative learning profile (weak areas, strong areas, topics tested)
 
 ### Progress API (`server/routes/progress.js`)
 - `GET /api/progress/:profileId` - Get progress data for a profile
@@ -150,6 +159,16 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
 - Generated questions are cached in the `generated_cache` SQLite table
 - Cache keys are MD5 hashes of request parameters (topic, ageGroup, difficulty, count, format)
 - Same request parameters return cached version without hitting API
+- `additionalContext` (including learning profile weak areas) is intentionally excluded from the cache key
+
+### Dynamic Test Flow
+- User configures test (topic, difficulty, format, count) via `TestConfig`
+- `TestConfig` fetches the user's learning profile and appends weak areas to `additionalContext` for context-aware generation
+- During the test, each question shows feedback after submission (correct/incorrect highlights, marking results); user must click "Next Question" to advance (no auto-advance)
+- On the last question, button reads "See Results"
+- Results screen shows score breakdown and a "Generate Study Report" button (button-triggered to conserve API calls)
+- Study report is generated via `POST /api/report`, which saves the test session, report, and updates the learning profile
+- Reports are accessible on the Dashboard via the `TestReports` component
 
 ## Frontend Patterns
 
@@ -162,7 +181,7 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
    - Dashboard (progress analytics)
 3. **Configuration** → Select subject/theme or generate new questions
 4. **Study/Test** → Interactive learning experience with timer option
-5. **Results** → Review performance, export to PDF, save generated questions
+5. **Results** → Review performance, generate study report, export to PDF, save generated questions
 
 ### State Management
 - Profile state managed in `App.jsx` and passed to pages
@@ -214,13 +233,21 @@ The project is built in phases (see `brief.md` and `PHASE2.md`):
 - **Pi deployment scripts**: One-time setup (`scripts/pi-setup.sh`) and deploy (`scripts/deploy.sh`)
 - **Tailscale**: For optional remote access outside the home network
 
+### Phase 5 (Complete)
+- **Pause-for-feedback**: Dynamic tests no longer auto-advance; after answering, feedback is shown and the user clicks "Next Question" (or "See Results" on the last question) to proceed
+- **AI study reports**: On test completion, users can click "Generate Study Report" to get a Claude-generated analysis with strengths, weak areas, a prioritised study plan, and age-appropriate encouragement
+- **Test session persistence**: Completed tests are saved to `test_sessions` table with full question/answer data; AI reports saved to `test_reports` table
+- **Learning profiles**: Cumulative per-user tracking in `learning_profiles` table — weak areas, strong areas, and topics tested are updated after each report
+- **Context-aware test generation**: When generating new tests, `TestConfig` fetches the user's learning profile and includes weak areas as `additionalContext` so Claude can target areas needing improvement
+- **Dashboard test reports**: New `TestReports` component on the Dashboard shows recent test reports with expandable details (topic, score, date, full study report)
+
 ## Important Conventions
 
 ### File Organization
 - **Components**: Reusable UI elements
   - Core: `FlashcardDeck`, `ConfigPanel`, `Navbar`, `ProfileSelector`
-  - Dashboard: `StatsCards`, `AccuracyChart`, `CategoryStrength`, `WeakestCards`, `Heatmap`
-  - Features: `ExportPDF`, `ImportExport`, `Timer`, `ThemeSwitcher`, `ColorPresets`
+  - Dashboard: `StatsCards`, `AccuracyChart`, `CategoryStrength`, `WeakestCards`, `Heatmap`, `TestReports`
+  - Features: `ExportPDF`, `ImportExport`, `Timer`, `ThemeSwitcher`, `ColorPresets`, `StudyReport`
   - Wizards: `FlashcardGenerationWizard`, `TestConfig`, `TestQuestion`, `TestResults`
 - **Pages**: Route-level components
   - `Home`, `Flashcards`, `DynamicTest`, `Results`, `Dashboard`, `SmartReview`
@@ -232,13 +259,14 @@ The project is built in phases (see `brief.md` and `PHASE2.md`):
   - `ThemeContext` - Theme switching (dark/light/high contrast)
 - **Routes**: Express route handlers (thin controllers)
   - `questions.js` - Question bank operations
-  - `claude.js` - AI generation and marking
+  - `claude.js` - AI generation, marking, study reports, and learning profiles
   - `progress.js` - Progress tracking and spaced repetition
 - **DAL**: Data access layer (all DB operations)
   - `subjects.js` - Subjects, themes, questions, categories, import/export
   - `profiles.js` - User profiles
   - `progress.js` - Card progress, history, stats, due cards
   - `cache.js` - Generated question cache
+  - `reports.js` - Test sessions, test reports, learning profiles
 - **DB**: Database setup
   - `index.js` - SQLite singleton with WAL mode
   - `schema.sql` - Table definitions
@@ -266,6 +294,8 @@ Three age groups determine content difficulty and feedback tone:
 - Supports multiple formats: `multiple_choice`, `free_text`, `mix`, `flashcard`
 - Rate limiting: 20 API calls per hour (in-memory counter, resets on restart)
 - Caching: Generated questions cached by hash of request parameters
+- Study reports: AI analyses test results to produce structured reports with strengths, weak areas, study plans, and encouragement
+- Learning profile context: When generating new tests, the user's cumulative weak areas are included in the prompt via `additionalContext` (not included in cache key)
 
 ### Spaced Repetition System
 - **Algorithm**: Simplified SM-2 (SuperMemo 2)
@@ -281,6 +311,21 @@ Progress is stored in SQLite across three tables:
 - **profile_stats**: Aggregate statistics (sessions, streaks, last session date)
 
 The DAL reconstructs the same JSON shape the frontend expects.
+
+### Study Reports & Learning Profiles
+- **Test sessions**: Every completed dynamic test is recorded in `test_sessions` with full question/answer data
+- **Study reports**: AI-generated reports stored in `test_reports`, linked to sessions; include summary, strengths, weak areas (with reasons and suggestions), a prioritised study plan, and encouragement
+- **Learning profiles**: `learning_profiles` stores cumulative per-user weak/strong areas as JSON; updated after each report generation; weak areas are merged by area name (most recent score kept); used as context when generating new tests
+- **Report shape** (stored as JSON in `test_reports.report_data`):
+  ```json
+  {
+    "summary": "Performance overview",
+    "strengths": ["area1", "area2"],
+    "weakAreas": [{ "area": "...", "reason": "...", "suggestion": "..." }],
+    "studyPlan": [{ "priority": 1, "topic": "...", "action": "...", "timeEstimate": "15 mins" }],
+    "encouragement": "Motivational message"
+  }
+  ```
 
 ### Theme System
 Themes are managed via CSS variables and React Context:
@@ -330,7 +375,8 @@ Subjects are now stored in SQLite. To add one:
 - `server/dal/profiles.js` - Data access: user profiles
 - `server/dal/progress.js` - Data access: card progress, history, stats, due cards
 - `server/dal/cache.js` - Data access: generated question cache
-- `server/routes/claude.js` - AI-powered question generation and marking
+- `server/dal/reports.js` - Data access: test sessions, reports, learning profiles
+- `server/routes/claude.js` - AI-powered question generation, marking, study reports, and learning profiles
 - `server/routes/questions.js` - Question bank API routes (delegates to DAL)
 - `server/routes/progress.js` - Progress tracking API routes (delegates to DAL)
 - `server/utils/spacedRepetition.js` - SM-2 algorithm for review scheduling
@@ -339,8 +385,11 @@ Subjects are now stored in SQLite. To add one:
 ### Frontend Core
 - `client/src/App.jsx` - React Router setup, profile and theme state
 - `client/src/context/ThemeContext.jsx` - Theme provider (dark/light/high contrast)
-- `client/src/pages/Dashboard.jsx` - Progress analytics and charts
+- `client/src/pages/Dashboard.jsx` - Progress analytics, charts, and test reports
+- `client/src/pages/DynamicTest.jsx` - Dynamic test flow with pause-for-feedback
 - `client/src/pages/SmartReview.jsx` - Spaced repetition study mode
+- `client/src/components/StudyReport.jsx` - Renders AI study report (strengths, weak areas, study plan)
+- `client/src/components/dashboard/TestReports.jsx` - Dashboard section listing past test reports
 - `client/src/hooks/useProgress.js` - Progress tracking hook
 - `client/vite.config.js` - API proxy configuration
 
