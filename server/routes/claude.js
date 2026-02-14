@@ -2,6 +2,10 @@ import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import crypto from 'crypto';
 import { getCached, setCache, getCacheIndex, getCachedGeneration } from '../dal/cache.js';
+import {
+  saveTestSession, saveTestReport, getReportsForProfile,
+  getLearningProfile, updateLearningProfile
+} from '../dal/reports.js';
 
 const router = express.Router();
 
@@ -348,6 +352,139 @@ router.get('/generated/:cacheKey', (req, res) => {
     });
   } catch (error) {
     res.status(404).json({ error: 'Test not found' });
+  }
+});
+
+router.post('/report', async (req, res) => {
+  try {
+    if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'sk-ant-your-key-here') {
+      return res.status(400).json({ error: 'API key not configured', code: 'NO_API_KEY' });
+    }
+
+    if (!checkRateLimit()) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        code: 'RATE_LIMIT',
+        userMessage: "You've been busy! Try again in a bit."
+      });
+    }
+
+    const { profileId, testData, answers } = req.body;
+
+    if (!profileId || !testData || !answers) {
+      return res.status(400).json({ error: 'Missing required fields', code: 'INVALID_REQUEST' });
+    }
+
+    const ageGroup = testData.meta?.ageGroup || 'adult';
+    const topic = testData.meta?.topic || 'General';
+    const totalScore = Math.round(answers.reduce((sum, a) => sum + a.score, 0) / answers.length);
+
+    // Fetch existing learning profile for context
+    const learningProfile = getLearningProfile(profileId);
+
+    // Build question-by-question breakdown for the prompt
+    const breakdown = testData.questions.map((q, i) => {
+      const a = answers[i];
+      return `Q${i + 1}: "${q.question}" | Score: ${a.score}% | Correct: ${a.isCorrect}${a.keyPointsMissed?.length ? ` | Missed: ${a.keyPointsMissed.join(', ')}` : ''}`;
+    }).join('\n');
+
+    const existingWeakAreas = learningProfile.weakAreas.length > 0
+      ? `\nThis student has previously struggled with: ${learningProfile.weakAreas.map(w => w.area).join(', ')}`
+      : '';
+
+    let ageRules;
+    if (ageGroup === 'primary') {
+      ageRules = 'Use simple, encouraging language. Maximum 3 study plan items. Be very positive and supportive.';
+    } else if (ageGroup === 'secondary') {
+      ageRules = 'Use balanced, constructive language with moderate detail. Up to 5 study plan items.';
+    } else {
+      ageRules = 'Use technical, professional language. Be direct and specific. Up to 5 study plan items.';
+    }
+
+    const systemPrompt = `You are a study advisor for RE-VISION, a UK-based family revision app.
+Analyse this test performance and generate a structured study report.
+
+Topic: ${topic}
+Age group: ${ageGroup}
+Overall score: ${totalScore}%
+${existingWeakAreas}
+
+Question breakdown:
+${breakdown}
+
+${ageRules}
+
+CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
+
+{
+  "summary": "2-3 sentence performance overview",
+  "strengths": ["area 1", "area 2"],
+  "weakAreas": [
+    { "area": "topic area", "reason": "why they struggled", "suggestion": "what to study" }
+  ],
+  "studyPlan": [
+    { "priority": 1, "topic": "...", "action": "specific action", "timeEstimate": "15 mins" }
+  ],
+  "encouragement": "age-appropriate motivational message"
+}`;
+
+    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+
+    const message = await anthropic.messages.create({
+      model: 'claude-sonnet-4-5-20250929',
+      max_tokens: 2048,
+      temperature: 0.4,
+      system: systemPrompt,
+      messages: [{ role: 'user', content: 'Generate the study report now. Return only JSON.' }]
+    });
+
+    let responseText = message.content[0].text;
+    responseText = responseText.replace(/^```json\s*|\s*```$/g, '').trim();
+    const reportData = JSON.parse(responseText);
+
+    // Save test session
+    const sessionId = `session-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    saveTestSession(sessionId, profileId, testData, answers, totalScore);
+
+    // Save report
+    const reportId = `report-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
+    saveTestReport(reportId, sessionId, profileId, reportData);
+
+    // Update learning profile
+    updateLearningProfile(profileId, reportData, topic);
+
+    res.json({ success: true, report: reportData, sessionId });
+  } catch (error) {
+    console.error('Report generation error:', error);
+    res.status(500).json({
+      error: 'Failed to generate report',
+      details: error.message,
+      code: 'API_ERROR',
+      userMessage: 'Something went wrong generating the report. Try again?'
+    });
+  }
+});
+
+router.get('/reports/:profileId', (req, res) => {
+  try {
+    const { profileId } = req.params;
+    const limit = parseInt(req.query.limit) || 10;
+    const reports = getReportsForProfile(profileId, limit);
+    res.json({ success: true, reports });
+  } catch (error) {
+    console.error('Fetch reports error:', error);
+    res.status(500).json({ error: 'Failed to fetch reports' });
+  }
+});
+
+router.get('/learning-profile/:profileId', (req, res) => {
+  try {
+    const { profileId } = req.params;
+    const profile = getLearningProfile(profileId);
+    res.json({ success: true, ...profile });
+  } catch (error) {
+    console.error('Fetch learning profile error:', error);
+    res.status(500).json({ error: 'Failed to fetch learning profile' });
   }
 });
 

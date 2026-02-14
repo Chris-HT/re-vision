@@ -10,6 +10,7 @@ export default function DynamicTest({ profile }) {
   const [testData, setTestData] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState([]);
+  const [answered, setAnswered] = useState(false);
   const [previousTests, setPreviousTests] = useState([]);
   const [apiConfigured, setApiConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -55,22 +56,23 @@ export default function DynamicTest({ profile }) {
   const handleAnswerSubmit = (answer) => {
     const newAnswers = [...answers, answer];
     setAnswers(newAnswers);
+    setAnswered(true);
+  };
 
-    // Move to next question after a delay
-    setTimeout(() => {
-      if (currentQuestionIndex < testData.questions.length - 1) {
-        setCurrentQuestionIndex(currentQuestionIndex + 1);
-      } else {
-        // All questions answered, show results
-        setTestState('results');
-      }
-    }, 1500);
+  const handleNextQuestion = () => {
+    setAnswered(false);
+    if (currentQuestionIndex < testData.questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    } else {
+      setTestState('results');
+    }
   };
 
   const handleRetry = () => {
     setTestState('testing');
     setCurrentQuestionIndex(0);
     setAnswers([]);
+    setAnswered(false);
   };
 
   const handleNewTest = () => {
@@ -78,6 +80,7 @@ export default function DynamicTest({ profile }) {
     setTestData(null);
     setCurrentQuestionIndex(0);
     setAnswers([]);
+    setAnswered(false);
   };
 
   const handleSaveToBank = async () => {
@@ -163,13 +166,15 @@ export default function DynamicTest({ profile }) {
                 onAnswerSubmit={handleAnswerSubmit}
               />
             )}
-            {answers.length > 0 && currentQuestionIndex < testData.questions.length - 1 && (
+            {answered && (
               <div className="max-w-3xl mx-auto mt-4 text-center">
                 <button
-                  onClick={() => setCurrentQuestionIndex(currentQuestionIndex + 1)}
+                  onClick={handleNextQuestion}
                   className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white font-medium rounded-lg transition-colors"
                 >
-                  Next Question →
+                  {currentQuestionIndex < testData.questions.length - 1
+                    ? 'Next Question →'
+                    : 'See Results →'}
                 </button>
               </div>
             )}
@@ -180,6 +185,7 @@ export default function DynamicTest({ profile }) {
           <TestResults
             testData={testData}
             answers={answers}
+            profile={profile}
             onRetry={handleRetry}
             onNewTest={handleNewTest}
             onSaveToBank={handleSaveToBank}

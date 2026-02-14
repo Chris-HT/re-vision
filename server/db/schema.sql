@@ -82,6 +82,7 @@ CREATE TABLE IF NOT EXISTS card_history (
   FOREIGN KEY (profile_id) REFERENCES profiles(id)
 );
 
+CREATE UNIQUE INDEX IF NOT EXISTS idx_card_history_unique ON card_history(profile_id, card_id, date, result);
 CREATE INDEX IF NOT EXISTS idx_card_history_profile ON card_history(profile_id);
 CREATE INDEX IF NOT EXISTS idx_card_history_date ON card_history(profile_id, date);
 CREATE INDEX IF NOT EXISTS idx_card_history_card ON card_history(profile_id, card_id);
@@ -105,4 +106,42 @@ CREATE TABLE IF NOT EXISTS generated_cache (
   format TEXT NOT NULL,
   generated_at TEXT NOT NULL,
   data TEXT NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS test_sessions (
+  id TEXT PRIMARY KEY,
+  profile_id TEXT NOT NULL,
+  topic TEXT NOT NULL,
+  age_group TEXT NOT NULL,
+  difficulty TEXT NOT NULL,
+  format TEXT NOT NULL,
+  question_count INTEGER NOT NULL,
+  score INTEGER NOT NULL,
+  completed_at TEXT NOT NULL,
+  questions_data TEXT NOT NULL,
+  answers_data TEXT NOT NULL,
+  FOREIGN KEY (profile_id) REFERENCES profiles(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_test_sessions_profile ON test_sessions(profile_id, completed_at);
+
+CREATE TABLE IF NOT EXISTS test_reports (
+  id TEXT PRIMARY KEY,
+  session_id TEXT NOT NULL UNIQUE,
+  profile_id TEXT NOT NULL,
+  report_data TEXT NOT NULL,
+  generated_at TEXT NOT NULL,
+  FOREIGN KEY (session_id) REFERENCES test_sessions(id),
+  FOREIGN KEY (profile_id) REFERENCES profiles(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_test_reports_profile ON test_reports(profile_id, generated_at);
+
+CREATE TABLE IF NOT EXISTS learning_profiles (
+  profile_id TEXT PRIMARY KEY,
+  weak_areas TEXT NOT NULL DEFAULT '[]',
+  strong_areas TEXT NOT NULL DEFAULT '[]',
+  topics_tested TEXT NOT NULL DEFAULT '[]',
+  updated_at TEXT NOT NULL,
+  FOREIGN KEY (profile_id) REFERENCES profiles(id)
 );

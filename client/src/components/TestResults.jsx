@@ -1,15 +1,20 @@
 import { useState } from 'react';
+import StudyReport from './StudyReport';
 
-export default function TestResults({ 
-  testData, 
-  answers, 
-  onRetry, 
+export default function TestResults({
+  testData,
+  answers,
+  profile,
+  onRetry,
   onNewTest,
-  onSaveToBank 
+  onSaveToBank
 }) {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(null);
+  const [report, setReport] = useState(null);
+  const [reportLoading, setReportLoading] = useState(false);
+  const [reportError, setReportError] = useState(null);
 
   const totalScore = Math.round(
     answers.reduce((sum, a) => sum + a.score, 0) / answers.length
@@ -54,6 +59,35 @@ export default function TestResults({
       setError(err.message);
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleGenerateReport = async () => {
+    setReportLoading(true);
+    setReportError(null);
+
+    try {
+      const response = await fetch('/api/report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          profileId: profile?.id,
+          testData,
+          answers
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.userMessage || data.error || 'Failed to generate report');
+      }
+
+      setReport(data.report);
+    } catch (err) {
+      setReportError(err.message);
+    } finally {
+      setReportLoading(false);
     }
   };
 
@@ -189,6 +223,51 @@ export default function TestResults({
             <p className="text-red-200">{error}</p>
           </div>
         )}
+
+        {/* Study Report Section */}
+        <div className="mt-8 border-t border-slate-600 pt-8">
+          {!report && !reportLoading && (
+            <div className="text-center">
+              <p className="text-slate-400 mb-4">Want personalised study advice based on your results?</p>
+              <button
+                onClick={handleGenerateReport}
+                disabled={!profile}
+                className="px-6 py-3 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 disabled:from-slate-600 disabled:to-slate-600 text-white font-medium rounded-lg transition-all"
+              >
+                Generate Study Report
+              </button>
+              {!profile && (
+                <p className="text-slate-500 text-sm mt-2">Select a profile to generate reports</p>
+              )}
+            </div>
+          )}
+
+          {reportLoading && (
+            <div className="text-center py-8">
+              <div className="inline-block w-8 h-8 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mb-4"></div>
+              <p className="text-slate-300">Analysing your performance...</p>
+            </div>
+          )}
+
+          {reportError && (
+            <div className="bg-red-900/50 border border-red-600 rounded-lg p-4 mb-4">
+              <p className="text-red-200">{reportError}</p>
+              <button
+                onClick={handleGenerateReport}
+                className="mt-2 text-sm text-red-300 hover:text-red-200 underline"
+              >
+                Try again
+              </button>
+            </div>
+          )}
+
+          {report && (
+            <div>
+              <h3 className="text-xl font-semibold text-white mb-4">Study Report</h3>
+              <StudyReport report={report} />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

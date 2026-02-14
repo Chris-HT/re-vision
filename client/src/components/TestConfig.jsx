@@ -11,6 +11,16 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPrevious, setShowPrevious] = useState(false);
+  const [learningProfile, setLearningProfile] = useState(null);
+
+  useEffect(() => {
+    if (profile?.id) {
+      fetch(`/api/learning-profile/${profile.id}`)
+        .then(res => res.ok ? res.json() : null)
+        .then(data => { if (data) setLearningProfile(data); })
+        .catch(() => {});
+    }
+  }, [profile?.id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -18,11 +28,22 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
     setError(null);
 
     try {
+      // Enrich additionalContext with learning profile weak areas
+      let enrichedContext = formData.additionalContext || '';
+      if (learningProfile?.weakAreas?.length > 0) {
+        const weakAreasList = learningProfile.weakAreas.map(w => w.area).join(', ');
+        const profileHint = `This student has previously struggled with: ${weakAreasList}. Please include some questions targeting these weak areas.`;
+        enrichedContext = enrichedContext
+          ? `${enrichedContext}\n${profileHint}`
+          : profileHint;
+      }
+
       const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
+          additionalContext: enrichedContext,
           ageGroup: profile.ageGroup
         })
       });

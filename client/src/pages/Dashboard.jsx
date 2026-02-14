@@ -7,6 +7,7 @@ import AccuracyChart from '../components/dashboard/AccuracyChart';
 import CategoryStrength from '../components/dashboard/CategoryStrength';
 import WeakestCards from '../components/dashboard/WeakestCards';
 import Heatmap from '../components/dashboard/Heatmap';
+import TestReports from '../components/dashboard/TestReports';
 
 export default function Dashboard({ profile }) {
   const navigate = useNavigate();
@@ -55,6 +56,11 @@ export default function Dashboard({ profile }) {
           {/* Heatmap */}
           <div className="mt-6">
             <Heatmap data={stats?.heatmapData || {}} />
+          </div>
+
+          {/* Test Reports */}
+          <div className="mt-6">
+            <TestReports profileId={profile.id} />
           </div>
 
           {/* Weakest Cards */}
