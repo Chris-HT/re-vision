@@ -1,13 +1,9 @@
 import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
-import fs from 'fs/promises';
-import path from 'path';
 import crypto from 'crypto';
-import { fileURLToPath } from 'url';
+import { getCached, setCache, getCacheIndex, getCachedGeneration } from '../dal/cache.js';
 
 const router = express.Router();
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
 
 const rateLimiter = {
   calls: 0,
@@ -20,11 +16,11 @@ function checkRateLimit() {
     rateLimiter.calls = 0;
     rateLimiter.resetTime = Date.now() + 3600000;
   }
-  
+
   if (rateLimiter.calls >= rateLimiter.limit) {
     return false;
   }
-  
+
   rateLimiter.calls++;
   return true;
 }
@@ -32,8 +28,8 @@ function checkRateLimit() {
 router.post('/generate', async (req, res) => {
   try {
     if (!process.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY === 'sk-ant-your-key-here') {
-      return res.status(400).json({ 
-        error: 'API key not configured', 
+      return res.status(400).json({
+        error: 'API key not configured',
         code: 'NO_API_KEY',
         userMessage: 'Ask Dad to set up the API key 😄'
       });
@@ -48,9 +44,9 @@ router.post('/generate', async (req, res) => {
     }
 
     const { topic, ageGroup, difficulty, count, format, additionalContext } = req.body;
-    
+
     if (!topic || !ageGroup || !difficulty || !count || !format) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: 'Missing required fields',
         code: 'INVALID_REQUEST'
       });
@@ -66,19 +62,15 @@ router.post('/generate', async (req, res) => {
     const cacheKey = crypto.createHash('md5')
       .update(`${topic}-${ageGroup}-${difficulty}-${count}-${format}`.toLowerCase())
       .digest('hex');
-    
-    const generatedDir = path.join(__dirname, '../../data/questions/generated');
-    const cacheFile = path.join(generatedDir, `${cacheKey}.json`);
-    
-    try {
-      const cached = await fs.readFile(cacheFile, 'utf-8');
+
+    // Check cache
+    const cached = getCached(cacheKey);
+    if (cached) {
       return res.json({
         success: true,
         cached: true,
-        ...JSON.parse(cached)
+        ...cached
       });
-    } catch (err) {
-      // Cache miss, generate new questions
     }
 
     const anthropic = new Anthropic({
@@ -194,7 +186,7 @@ Rules:
 
     let responseText = message.content[0].text;
     responseText = responseText.replace(/^```json\s*|\s*```$/g, '').trim();
-    
+
     let generatedData;
     try {
       generatedData = JSON.parse(responseText);
@@ -211,7 +203,7 @@ Rules:
           }
         ]
       });
-      
+
       responseText = retryMessage.content[0].text;
       responseText = responseText.replace(/^```json\s*|\s*```$/g, '').trim();
       generatedData = JSON.parse(responseText);
@@ -224,20 +216,8 @@ Rules:
       difficulty: q.difficulty || difficultyMap[difficulty] || 2
     }));
 
-    await fs.writeFile(cacheFile, JSON.stringify(generatedData, null, 2));
-
-    const indexPath = path.join(generatedDir, 'index.json');
-    const index = JSON.parse(await fs.readFile(indexPath, 'utf-8'));
-    index.generations.push({
-      cacheKey,
-      topic,
-      ageGroup,
-      difficulty,
-      count,
-      format,
-      generatedAt: new Date().toISOString()
-    });
-    await fs.writeFile(indexPath, JSON.stringify(index, null, 2));
+    // Cache to SQLite
+    setCache(cacheKey, { topic, ageGroup, difficulty, count, format }, generatedData);
 
     res.json({
       success: true,
@@ -328,7 +308,7 @@ Marking rules:
 
     let responseText = message.content[0].text;
     responseText = responseText.replace(/^```json\s*|\s*```$/g, '').trim();
-    
+
     const markingResult = JSON.parse(responseText);
 
     res.json({
@@ -346,21 +326,21 @@ Marking rules:
   }
 });
 
-router.get('/generated', async (req, res) => {
+router.get('/generated', (req, res) => {
   try {
-    const indexPath = path.join(__dirname, '../../data/questions/generated/index.json');
-    const index = JSON.parse(await fs.readFile(indexPath, 'utf-8'));
-    res.json(index);
+    res.json(getCacheIndex());
   } catch (error) {
     res.status(500).json({ error: 'Failed to fetch generated tests' });
   }
 });
 
-router.get('/generated/:cacheKey', async (req, res) => {
+router.get('/generated/:cacheKey', (req, res) => {
   try {
     const { cacheKey } = req.params;
-    const filePath = path.join(__dirname, '../../data/questions/generated', `${cacheKey}.json`);
-    const data = JSON.parse(await fs.readFile(filePath, 'utf-8'));
+    const data = getCachedGeneration(cacheKey);
+    if (!data) {
+      return res.status(404).json({ error: 'Test not found' });
+    }
     res.json({
       success: true,
       cached: true,

@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
-import fs from 'fs/promises';
+import './db/index.js';
 import questionRoutes from './routes/questions.js';
 import claudeRoutes from './routes/claude.js';
 import progressRoutes from './routes/progress.js';
@@ -34,7 +34,7 @@ app.use('/api', progressRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));
-  
+
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, '../client/dist/index.html'));
   });
@@ -42,29 +42,10 @@ if (process.env.NODE_ENV === 'production') {
 
 app.use(errorHandler);
 
-async function ensureDirectories() {
-  const generatedDir = path.join(__dirname, '..', 'data', 'questions', 'generated');
-  const progressDir = path.join(__dirname, '..', 'data', 'progress');
-  try {
-    await fs.mkdir(generatedDir, { recursive: true });
-    await fs.mkdir(progressDir, { recursive: true });
-    const indexPath = path.join(generatedDir, 'index.json');
-    try {
-      await fs.access(indexPath);
-    } catch {
-      await fs.writeFile(indexPath, JSON.stringify({ generations: [] }, null, 2));
-    }
-  } catch (error) {
-    console.error('Error creating directories:', error);
-  }
-}
-
-ensureDirectories();
-
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🧠 RE-VISION running at:');
   console.log(`   Local:   http://localhost:${PORT}`);
-  
+
   const networkInterfaces = os.networkInterfaces();
   Object.values(networkInterfaces).forEach(interfaces => {
     interfaces.forEach(iface => {
