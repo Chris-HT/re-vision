@@ -1,3 +1,40 @@
 {
-  "generations": []
+  "generations": [
+    {
+      "cacheKey": "ba35367db474b408f577248d3b52f7f9",
+      "topic": "quadtratic equations",
+      "ageGroup": "secondary",
+      "difficulty": "easy",
+      "count": 5,
+      "format": "multiple_choice",
+      "generatedAt": "2026-02-13T23:35:57.196Z"
+    },
+    {
+      "cacheKey": "ff91eb204d62127f480cb0f76bf999ea",
+      "topic": "Qudratic Equations",
+      "ageGroup": "secondary",
+      "difficulty": "easy",
+      "count": 5,
+      "format": "multiple_choice",
+      "generatedAt": "2026-02-13T23:52:46.629Z"
+    },
+    {
+      "cacheKey": "6b78bd90801518db2b39e3a5d25a9b1f",
+      "topic": "fractions",
+      "ageGroup": "primary",
+      "difficulty": "easy",
+      "count": 5,
+      "format": "mix",
+      "generatedAt": "2026-02-14T08:26:10.505Z"
+    },
+    {
+      "cacheKey": "67bb64835eadd6729720878bda7a312e",
+      "topic": "Fractions",
+      "ageGroup": "primary",
+      "difficulty": "medium",
+      "count": 10,
+      "format": "flashcard",
+      "generatedAt": "2026-02-14T08:41:50.863Z"
+    }
+  ]
 }

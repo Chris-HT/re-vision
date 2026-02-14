@@ -20,6 +20,21 @@
           "questionFile": "power-bi-dax-calculations.json"
         }
       ]
+    },
+    {
+      "id": "year-4-maths",
+      "name": "Year 4 Maths",
+      "icon": "📐",
+      "description": "Year 4 Maths Revision",
+      "ageGroup": "primary",
+      "themes": [
+        {
+          "id": "maths",
+          "name": "Maths",
+          "color": "from-green-500 to-emerald-500",
+          "questionFile": "year-4-maths-maths.json"
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,109 @@
+{
+  "meta": {
+    "topic": "quadratic equations",
+    "ageGroup": "secondary",
+    "difficulty": "easy",
+    "generatedAt": "2025-01-10T15:30:00Z"
+  },
+  "questions": [
+    {
+      "id": "gen-1771025757193-1",
+      "category": "quadratic equations",
+      "question": "What is the general form of a quadratic equation?",
+      "answer": "ax² + bx + c = 0",
+      "difficulty": 1,
+      "tags": [
+        "general form",
+        "quadratic",
+        "algebra"
+      ],
+      "format": "multiple_choice",
+      "options": [
+        "A) ax + b = 0",
+        "B) ax² + bx + c = 0",
+        "C) ax³ + bx² + cx + d = 0",
+        "D) ax² = c"
+      ],
+      "correctOption": "B"
+    },
+    {
+      "id": "gen-1771025757193-2",
+      "category": "quadratic equations",
+      "question": "Solve the quadratic equation: x² - 4 = 0",
+      "answer": "x = 2 or x = -2",
+      "difficulty": 1,
+      "tags": [
+        "solving",
+        "difference of squares",
+        "factorising"
+      ],
+      "format": "multiple_choice",
+      "options": [
+        "A) x = 4 only",
+        "B) x = 2 only",
+        "C) x = 2 or x = -2",
+        "D) x = 0 or x = 4"
+      ],
+      "correctOption": "C"
+    },
+    {
+      "id": "gen-1771025757193-3",
+      "category": "quadratic equations",
+      "question": "Factorise the quadratic expression: x² + 5x + 6",
+      "answer": "(x + 2)(x + 3)",
+      "difficulty": 1,
+      "tags": [
+        "factorising",
+        "quadratic expressions"
+      ],
+      "format": "multiple_choice",
+      "options": [
+        "A) (x + 1)(x + 6)",
+        "B) (x + 2)(x + 3)",
+        "C) (x - 2)(x - 3)",
+        "D) (x + 5)(x + 1)"
+      ],
+      "correctOption": "B"
+    },
+    {
+      "id": "gen-1771025757193-4",
+      "category": "quadratic equations",
+      "question": "What are the solutions to the equation: x² + 3x = 0?",
+      "answer": "x = 0 or x = -3",
+      "difficulty": 1,
+      "tags": [
+        "solving",
+        "factorising",
+        "zero product"
+      ],
+      "format": "multiple_choice",
+      "options": [
+        "A) x = 0 or x = 3",
+        "B) x = 0 or x = -3",
+        "C) x = 3 only",
+        "D) x = -3 only"
+      ],
+      "correctOption": "B"
+    },
+    {
+      "id": "gen-1771025757193-5",
+      "category": "quadratic equations",
+      "question": "Which of these is a quadratic equation?",
+      "answer": "2x² - 7x + 3 = 0",
+      "difficulty": 1,
+      "tags": [
+        "identifying",
+        "quadratic",
+        "equations"
+      ],
+      "format": "multiple_choice",
+      "options": [
+        "A) 3x + 5 = 0",
+        "B) 2x² - 7x + 3 = 0",
+        "C) x³ - 2x = 0",
+        "D) 4x = 12"
+      ],
+      "correctOption": "B"
+    }
+  ]
+}

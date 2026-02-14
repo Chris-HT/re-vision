@@ -74,38 +74,66 @@ router.get('/profiles', async (req, res, next) => {
   }
 });
 
+// PUT /api/profiles/:profileId - Update profile settings
+router.put('/profiles/:profileId', async (req, res, next) => {
+  try {
+    const { profileId } = req.params;
+    const updates = req.body;
+    const profilesPath = path.join(dataPath, 'profiles.json');
+    const data = JSON.parse(await fs.readFile(profilesPath, 'utf-8'));
+
+    const profileIndex = data.profiles.findIndex(p => p.id === profileId);
+    if (profileIndex === -1) {
+      return res.status(404).json({ error: 'Profile not found' });
+    }
+
+    // Merge allowed fields
+    const allowedFields = ['theme', 'favourites', 'name', 'icon'];
+    for (const field of allowedFields) {
+      if (updates[field] !== undefined) {
+        data.profiles[profileIndex][field] = updates[field];
+      }
+    }
+
+    await fs.writeFile(profilesPath, JSON.stringify(data, null, 2));
+    res.json({ success: true, profile: data.profiles[profileIndex] });
+  } catch (error) {
+    next(error);
+  }
+});
+
 router.post('/generate/save', async (req, res, next) => {
   try {
-    const { subjectId, themeId, questions } = req.body;
-    
+    const { subjectId, themeId, questions, subjectMetadata, themeMetadata } = req.body;
+
     if (!subjectId || !themeId || !questions || !Array.isArray(questions)) {
       return res.status(400).json({ error: 'Invalid request body' });
     }
-    
+
     const subjectsPath = path.join(dataPath, 'subjects.json');
     const subjectsData = JSON.parse(await fs.readFile(subjectsPath, 'utf-8'));
-    
+
     let subject = subjectsData.subjects.find(s => s.id === subjectId);
     let theme = subject?.themes.find(t => t.id === themeId);
-    
+
     if (!subject) {
       subject = {
         id: subjectId,
-        name: subjectId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        icon: '📚',
-        description: 'Generated subject',
-        ageGroup: 'all',
+        name: subjectMetadata?.name || subjectId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        icon: subjectMetadata?.icon || '📚',
+        description: subjectMetadata?.description || 'Generated subject',
+        ageGroup: subjectMetadata?.ageGroup || 'all',
         themes: []
       };
       subjectsData.subjects.push(subject);
     }
-    
+
     if (!theme) {
       const questionFileName = `${subjectId}-${themeId}.json`;
       theme = {
         id: themeId,
-        name: themeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-        color: 'from-blue-500 to-purple-500',
+        name: themeMetadata?.name || themeId.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+        color: themeMetadata?.color || 'from-blue-500 to-purple-500',
         questionFile: questionFileName
       };
       subject.themes.push(theme);
@@ -174,6 +202,102 @@ router.post('/generate/save', async (req, res, next) => {
       success: true,
       message: `Saved ${newQuestions.length} questions to ${subjectId}/${themeId}`,
       savedCount: newQuestions.length
+    });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/subjects/:subjectId/export - Export a complete subject bundle
+router.get('/subjects/:subjectId/export', async (req, res, next) => {
+  try {
+    const { subjectId } = req.params;
+    const subjectsPath = path.join(dataPath, 'subjects.json');
+    const subjectsData = JSON.parse(await fs.readFile(subjectsPath, 'utf-8'));
+
+    const subject = subjectsData.subjects.find(s => s.id === subjectId);
+    if (!subject) {
+      return res.status(404).json({ error: 'Subject not found' });
+    }
+
+    const bundle = {
+      exportVersion: 1,
+      exportDate: new Date().toISOString(),
+      subject: { ...subject },
+      questionFiles: {}
+    };
+
+    for (const theme of subject.themes) {
+      try {
+        const questionData = JSON.parse(
+          await fs.readFile(path.join(dataPath, 'questions', theme.questionFile), 'utf-8')
+        );
+        bundle.questionFiles[theme.questionFile] = questionData;
+      } catch {
+        // Skip missing files
+      }
+    }
+
+    res.json(bundle);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/subjects/import - Import a subject bundle
+router.post('/subjects/import', async (req, res, next) => {
+  try {
+    const bundle = req.body;
+
+    // Validate structure
+    if (!bundle.subject || !bundle.questionFiles) {
+      return res.status(400).json({ error: 'Invalid import bundle: missing subject or questionFiles' });
+    }
+
+    if (!bundle.subject.id || !bundle.subject.name || !bundle.subject.themes) {
+      return res.status(400).json({ error: 'Invalid import bundle: subject missing required fields' });
+    }
+
+    const subjectsPath = path.join(dataPath, 'subjects.json');
+    const subjectsData = JSON.parse(await fs.readFile(subjectsPath, 'utf-8'));
+
+    // Handle ID collision
+    let subjectId = bundle.subject.id;
+    if (subjectsData.subjects.find(s => s.id === subjectId)) {
+      subjectId = `imp-${subjectId}`;
+      bundle.subject.id = subjectId;
+      bundle.subject.name = `${bundle.subject.name} (Imported)`;
+    }
+
+    // Write question files
+    let totalQuestions = 0;
+    for (const [filename, questionData] of Object.entries(bundle.questionFiles)) {
+      // Prefix question IDs to avoid collisions
+      if (questionData.questions) {
+        questionData.questions = questionData.questions.map(q => ({
+          ...q,
+          id: q.id.startsWith('imp-') ? q.id : `imp-${q.id}`
+        }));
+        totalQuestions += questionData.questions.length;
+      }
+      if (questionData.meta) {
+        questionData.meta.subject = subjectId;
+      }
+      await fs.writeFile(
+        path.join(dataPath, 'questions', filename),
+        JSON.stringify(questionData, null, 2)
+      );
+    }
+
+    // Add subject to subjects.json
+    subjectsData.subjects.push(bundle.subject);
+    await fs.writeFile(subjectsPath, JSON.stringify(subjectsData, null, 2));
+
+    res.json({
+      success: true,
+      message: `Imported "${bundle.subject.name}" with ${totalQuestions} questions`,
+      subjectId: bundle.subject.id,
+      totalQuestions
     });
   } catch (error) {
     next(error);

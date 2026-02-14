@@ -1,0 +1,160 @@
+{
+  "meta": {
+    "subject": "year-4-maths",
+    "theme": "maths",
+    "version": 1,
+    "lastUpdated": "2026-02-14"
+  },
+  "categories": {
+    "Identifying Fractions": {
+      "color": "#8b5cf6",
+      "bgClass": "bg-purple-500",
+      "lightClass": "bg-purple-50",
+      "borderClass": "border-purple-300",
+      "textClass": "text-purple-700"
+    },
+    "Equivalent Fractions": {
+      "color": "#b14ac7",
+      "bgClass": "bg-blue-500",
+      "lightClass": "bg-blue-50",
+      "borderClass": "border-blue-300",
+      "textClass": "text-blue-700"
+    },
+    "Comparing Fractions": {
+      "color": "#1bcecb",
+      "bgClass": "bg-green-500",
+      "lightClass": "bg-green-50",
+      "borderClass": "border-green-300",
+      "textClass": "text-green-700"
+    },
+    "Adding Fractions": {
+      "color": "#e88acd",
+      "bgClass": "bg-cyan-500",
+      "lightClass": "bg-cyan-50",
+      "borderClass": "border-cyan-300",
+      "textClass": "text-cyan-700"
+    },
+    "Subtracting Fractions": {
+      "color": "#2db227",
+      "bgClass": "bg-indigo-500",
+      "lightClass": "bg-indigo-50",
+      "borderClass": "border-indigo-300",
+      "textClass": "text-indigo-700"
+    }
+  },
+  "questions": [
+    {
+      "id": "gen-1771058510860-1",
+      "category": "Identifying Fractions",
+      "question": "What fraction of a pizza is left if you eat 3 slices out of 8 equal slices?",
+      "answer": "5/8 of the pizza is left. You subtract the eaten slices from the total: 8 - 3 = 5 slices remaining out of 8.",
+      "difficulty": 2,
+      "tags": [
+        "fractions",
+        "subtraction",
+        "real-world"
+      ]
+    },
+    {
+      "id": "gen-1771058510860-2",
+      "category": "Equivalent Fractions",
+      "question": "Is 2/4 equivalent to 1/2? Explain why.",
+      "answer": "Yes, 2/4 is equivalent to 1/2. If you divide both the numerator and denominator of 2/4 by 2, you get 1/2. They represent the same amount.",
+      "difficulty": 2,
+      "tags": [
+        "equivalent fractions",
+        "simplifying"
+      ]
+    },
+    {
+      "id": "gen-1771058510860-3",
+      "category": "Comparing Fractions",
+      "question": "Which is larger: 3/5 or 2/5?",
+      "answer": "3/5 is larger than 2/5. When fractions have the same denominator, the one with the bigger numerator is larger.",
+      "difficulty": 1,
+      "tags": [
+        "comparing",
+        "fractions"
+      ]
+    },
+    {
+      "id": "gen-1771058510860-4",
+      "category": "Adding Fractions",
+      "question": "What is 1/6 + 2/6?",
+      "answer": "1/6 + 2/6 = 3/6, which simplifies to 1/2. Add the numerators and keep the denominator the same.",
+      "difficulty": 2,
+      "tags": [
+        "addition",
+        "simplifying"
+      ]
+    },
+    {
+      "id": "gen-1771058510860-5",
+      "category": "Identifying Fractions",
+      "question": "If a chocolate bar has 12 squares and you eat 3 squares, what fraction have you eaten?",
+      "answer": "You have eaten 3/12 of the chocolate bar, which simplifies to 1/4.",
+      "difficulty": 2,
+      "tags": [
+        "fractions",
+        "simplifying",
+        "real-world"
+      ]
+    },
+    {
+      "id": "gen-1771058510860-6",
+      "category": "Equivalent Fractions",
+      "question": "Write three fractions that are equivalent to 1/3.",
+      "answer": "Three equivalent fractions are 2/6, 3/9, and 4/12. You multiply both the numerator and denominator by the same number.",
+      "difficulty": 2,
+      "tags": [
+        "equivalent fractions",
+        "multiplication"
+      ]
+    },
+    {
+      "id": "gen-1771058510860-7",
+      "category": "Subtracting Fractions",
+      "question": "What is 5/8 - 2/8?",
+      "answer": "5/8 - 2/8 = 3/8. Subtract the numerators and keep the denominator the same.",
+      "difficulty": 2,
+      "tags": [
+        "subtraction",
+        "fractions"
+      ]
+    },
+    {
+      "id": "gen-1771058510860-8",
+      "category": "Comparing Fractions",
+      "question": "Which is smaller: 1/4 or 1/3?",
+      "answer": "1/4 is smaller than 1/3. When the numerators are the same, the fraction with the larger denominator is smaller because you're dividing into more pieces.",
+      "difficulty": 2,
+      "tags": [
+        "comparing",
+        "fractions"
+      ]
+    },
+    {
+      "id": "gen-1771058510860-9",
+      "category": "Adding Fractions",
+      "question": "If you drink 1/4 of a bottle of juice in the morning and 2/4 in the afternoon, what fraction have you drunk altogether?",
+      "answer": "You have drunk 3/4 of the bottle altogether. Add 1/4 + 2/4 = 3/4.",
+      "difficulty": 2,
+      "tags": [
+        "addition",
+        "real-world",
+        "fractions"
+      ]
+    },
+    {
+      "id": "gen-1771058510860-10",
+      "category": "Identifying Fractions",
+      "question": "What is the numerator in the fraction 7/10?",
+      "answer": "The numerator is 7. The numerator is the top number in a fraction and shows how many parts you have.",
+      "difficulty": 1,
+      "tags": [
+        "numerator",
+        "fraction parts"
+      ]
+    }
+  ]
+}

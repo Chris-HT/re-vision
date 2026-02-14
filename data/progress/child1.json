@@ -1,0 +1,11 @@
+{
+  "profileId": "child1",
+  "cards": {},
+  "stats": {
+    "totalSessions": 0,
+    "totalCardsStudied": 0,
+    "currentStreak": 0,
+    "longestStreak": 0,
+    "lastSessionDate": null
+  }
+}

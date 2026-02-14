@@ -1,0 +1,105 @@
+{
+  "meta": {
+    "topic": "Quadratic Equations",
+    "ageGroup": "secondary",
+    "difficulty": "easy",
+    "generatedAt": "2025-01-15T10:30:00Z"
+  },
+  "questions": [
+    {
+      "id": "gen-1771026766627-1",
+      "category": "Quadratic Equations",
+      "question": "What is the standard form of a quadratic equation?",
+      "answer": "ax² + bx + c = 0",
+      "difficulty": 1,
+      "tags": [
+        "standard form",
+        "basics"
+      ],
+      "format": "multiple_choice",
+      "options": [
+        "A) ax + b = 0",
+        "B) ax² + bx + c = 0",
+        "C) ax³ + bx² + cx + d = 0",
+        "D) y = mx + c"
+      ],
+      "correctOption": "B"
+    },
+    {
+      "id": "gen-1771026766627-2",
+      "category": "Quadratic Equations",
+      "question": "Solve the quadratic equation: x² - 4 = 0",
+      "answer": "x = 2 or x = -2",
+      "difficulty": 1,
+      "tags": [
+        "solving",
+        "factoring"
+      ],
+      "format": "multiple_choice",
+      "options": [
+        "A) x = 4",
+        "B) x = 2 or x = -2",
+        "C) x = 0",
+        "D) x = 16"
+      ],
+      "correctOption": "B"
+    },
+    {
+      "id": "gen-1771026766627-3",
+      "category": "Quadratic Equations",
+      "question": "Which of the following is a quadratic equation?",
+      "answer": "x² + 5x + 6 = 0",
+      "difficulty": 1,
+      "tags": [
+        "identification",
+        "basics"
+      ],
+      "format": "multiple_choice",
+      "options": [
+        "A) 3x + 7 = 0",
+        "B) x² + 5x + 6 = 0",
+        "C) 2x³ - 4 = 0",
+        "D) 5x = 10"
+      ],
+      "correctOption": "B"
+    },
+    {
+      "id": "gen-1771026766627-4",
+      "category": "Quadratic Equations",
+      "question": "Solve by factoring: x² + 5x + 6 = 0",
+      "answer": "x = -2 or x = -3",
+      "difficulty": 1,
+      "tags": [
+        "factoring",
+        "solving"
+      ],
+      "format": "multiple_choice",
+      "options": [
+        "A) x = 2 or x = 3",
+        "B) x = -2 or x = -3",
+        "C) x = 1 or x = 6",
+        "D) x = 0 or x = -5"
+      ],
+      "correctOption": "B"
+    },
+    {
+      "id": "gen-1771026766627-5",
+      "category": "Quadratic Equations",
+      "question": "What is the value of x if x² = 25?",
+      "answer": "x = 5 or x = -5",
+      "difficulty": 1,
+      "tags": [
+        "square roots",
+        "solving"
+      ],
+      "format": "multiple_choice",
+      "options": [
+        "A) x = 5 only",
+        "B) x = 25",
+        "C) x = 5 or x = -5",
+        "D) x = 12.5"
+      ],
+      "correctOption": "C"
+    }
+  ]
+}

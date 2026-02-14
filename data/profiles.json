@@ -4,22 +4,32 @@
       "id": "dad",
       "name": "Dad",
       "icon": "👨‍💻",
-      "defaultSubjects": ["power-bi"],
-      "ageGroup": "adult"
+      "defaultSubjects": [
+        "power-bi"
+      ],
+      "ageGroup": "adult",
+      "theme": "light",
+      "favourites": [
+        "power-bi"
+      ]
     },
     {
       "id": "child1",
-      "name": "Child 1",
+      "name": "Isaac",
       "icon": "📚",
       "defaultSubjects": [],
-      "ageGroup": "secondary"
+      "ageGroup": "secondary",
+      "theme": "dark",
+      "favourites": []
     },
     {
       "id": "child2",
-      "name": "Child 2",
+      "name": "Beau",
       "icon": "🎒",
       "defaultSubjects": [],
-      "ageGroup": "primary"
+      "ageGroup": "primary",
+      "theme": "dark",
+      "favourites": []
     }
   ]
 }

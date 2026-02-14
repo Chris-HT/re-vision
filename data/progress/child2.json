@@ -1,0 +1,64 @@
+{
+  "profileId": "child2",
+  "cards": {
+    "gen-1771058510860-1": {
+      "lastSeen": "2026-02-14T08:43:48.319Z",
+      "nextDue": "2026-02-15T08:43:48.319Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T08:43:48.319Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "gen-1771058510860-2": {
+      "lastSeen": "2026-02-14T08:45:37.238Z",
+      "nextDue": "2026-02-15T08:45:37.238Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T08:45:37.238Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "gen-1771058510860-4": {
+      "lastSeen": "2026-02-14T08:46:28.382Z",
+      "nextDue": "2026-02-15T08:46:28.382Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T08:46:28.382Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "gen-1771058510860-9": {
+      "lastSeen": "2026-02-14T08:47:05.795Z",
+      "nextDue": "2026-02-15T08:47:05.795Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T08:47:05.795Z",
+          "result": "correct"
+        }
+      ]
+    }
+  },
+  "stats": {
+    "totalSessions": 1,
+    "totalCardsStudied": 4,
+    "currentStreak": 1,
+    "longestStreak": 1,
+    "lastSessionDate": "2026-02-14T08:47:05.795Z"
+  }
+}

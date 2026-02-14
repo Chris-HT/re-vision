@@ -7,6 +7,7 @@ import os from 'os';
 import fs from 'fs/promises';
 import questionRoutes from './routes/questions.js';
 import claudeRoutes from './routes/claude.js';
+import progressRoutes from './routes/progress.js';
 import errorHandler from './middleware/errorHandler.js';
 
 dotenv.config({ path: path.join(process.cwd(), '..', '.env') });
@@ -29,6 +30,7 @@ app.get('/api/health', (req, res) => {
 
 app.use('/api', questionRoutes);
 app.use('/api', claudeRoutes);
+app.use('/api', progressRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));
@@ -42,8 +44,10 @@ app.use(errorHandler);
 
 async function ensureDirectories() {
   const generatedDir = path.join(__dirname, '..', 'data', 'questions', 'generated');
+  const progressDir = path.join(__dirname, '..', 'data', 'progress');
   try {
     await fs.mkdir(generatedDir, { recursive: true });
+    await fs.mkdir(progressDir, { recursive: true });
     const indexPath = path.join(generatedDir, 'index.json');
     try {
       await fs.access(indexPath);

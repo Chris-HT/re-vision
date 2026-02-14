@@ -11,6 +11,15 @@ export default function ConfigPanel({
   const [selectedCategories, setSelectedCategories] = useState(initialConfig.categories || []);
   const [selectedDifficulty, setSelectedDifficulty] = useState(initialConfig.difficulty || 'all');
 
+  // Sync from parent when initialConfig changes (e.g. after wizard completion)
+  useEffect(() => {
+    if (initialConfig.subject && initialConfig.subject !== selectedSubject) {
+      setSelectedSubject(initialConfig.subject);
+      setSelectedTheme(initialConfig.theme || '');
+      setSelectedCategories([]);
+    }
+  }, [initialConfig.subject, initialConfig.theme]);
+
   const currentSubject = subjects?.find(s => s.id === selectedSubject);
   const availableCategories = Object.keys(categories || {});
 

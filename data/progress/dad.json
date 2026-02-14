@@ -1,0 +1,530 @@
+{
+  "profileId": "dad",
+  "cards": {
+    "sms-019": {
+      "lastSeen": "2026-02-14T01:21:58.902Z",
+      "nextDue": "2026-02-15T01:21:58.902Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:21:58.902Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "sms-033": {
+      "lastSeen": "2026-02-14T08:28:25.835Z",
+      "nextDue": "2026-02-17T08:28:25.835Z",
+      "interval": 3,
+      "easeFactor": 2.7,
+      "repetitions": 2,
+      "history": [
+        {
+          "date": "2026-02-14T08:28:25.835Z",
+          "result": "correct"
+        },
+        {
+          "date": "2026-02-14T01:22:21.197Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "sms-016": {
+      "lastSeen": "2026-02-14T08:29:18.903Z",
+      "nextDue": "2026-02-15T08:29:18.903Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:18.903Z",
+          "result": "skipped"
+        },
+        {
+          "date": "2026-02-14T01:22:32.242Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "dax-021": {
+      "lastSeen": "2026-02-14T01:22:41.425Z",
+      "nextDue": "2026-02-15T01:22:41.425Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:22:41.425Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "dax-027": {
+      "lastSeen": "2026-02-14T01:22:51.879Z",
+      "nextDue": "2026-02-15T01:22:51.879Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:22:51.879Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "sms-022": {
+      "lastSeen": "2026-02-14T08:28:07.506Z",
+      "nextDue": "2026-02-17T08:28:07.506Z",
+      "interval": 3,
+      "easeFactor": 2.7,
+      "repetitions": 2,
+      "history": [
+        {
+          "date": "2026-02-14T08:28:07.506Z",
+          "result": "correct"
+        },
+        {
+          "date": "2026-02-14T01:23:03.363Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "dax-013": {
+      "lastSeen": "2026-02-14T01:23:13.562Z",
+      "nextDue": "2026-02-15T01:23:13.562Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:23:13.562Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "sms-030": {
+      "lastSeen": "2026-02-14T01:23:19.667Z",
+      "nextDue": "2026-02-15T01:23:19.667Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:23:19.667Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "dax-028": {
+      "lastSeen": "2026-02-14T01:23:24.006Z",
+      "nextDue": "2026-02-15T01:23:24.006Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:23:24.006Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "sms-001": {
+      "lastSeen": "2026-02-14T01:23:33.965Z",
+      "nextDue": "2026-02-15T01:23:33.965Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:23:33.965Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "sms-002": {
+      "lastSeen": "2026-02-14T08:28:36.437Z",
+      "nextDue": "2026-02-17T08:28:36.437Z",
+      "interval": 3,
+      "easeFactor": 2.7,
+      "repetitions": 2,
+      "history": [
+        {
+          "date": "2026-02-14T08:28:36.437Z",
+          "result": "correct"
+        },
+        {
+          "date": "2026-02-14T01:23:40.127Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "sms-021": {
+      "lastSeen": "2026-02-14T01:23:44.009Z",
+      "nextDue": "2026-02-15T01:23:44.009Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:23:44.009Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "dax-014": {
+      "lastSeen": "2026-02-14T01:23:52.640Z",
+      "nextDue": "2026-02-15T01:23:52.640Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:23:52.640Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "sms-024": {
+      "lastSeen": "2026-02-14T08:27:59.050Z",
+      "nextDue": "2026-02-17T08:27:59.050Z",
+      "interval": 3,
+      "easeFactor": 2.7,
+      "repetitions": 2,
+      "history": [
+        {
+          "date": "2026-02-14T08:27:59.050Z",
+          "result": "correct"
+        },
+        {
+          "date": "2026-02-14T01:24:05.643Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "dax-003": {
+      "lastSeen": "2026-02-14T01:24:50.481Z",
+      "nextDue": "2026-02-15T01:24:50.481Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:24:50.481Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "dax-044": {
+      "lastSeen": "2026-02-14T01:27:43.051Z",
+      "nextDue": "2026-02-15T01:27:43.051Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:27:43.051Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "dax-008": {
+      "lastSeen": "2026-02-14T01:27:58.244Z",
+      "nextDue": "2026-02-15T01:27:58.244Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:27:58.244Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "sms-012": {
+      "lastSeen": "2026-02-14T08:28:31.224Z",
+      "nextDue": "2026-02-17T08:28:31.224Z",
+      "interval": 3,
+      "easeFactor": 2.7,
+      "repetitions": 2,
+      "history": [
+        {
+          "date": "2026-02-14T08:28:31.224Z",
+          "result": "correct"
+        },
+        {
+          "date": "2026-02-14T01:28:09.001Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "dax-015": {
+      "lastSeen": "2026-02-14T01:28:16.626Z",
+      "nextDue": "2026-02-15T01:28:16.626Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T01:28:16.626Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "dax-062": {
+      "lastSeen": "2026-02-14T01:28:41.149Z",
+      "nextDue": "2026-02-15T01:28:41.149Z",
+      "interval": 1,
+      "easeFactor": 2.3,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T01:28:41.149Z",
+          "result": "incorrect"
+        }
+      ]
+    },
+    "dax-016": {
+      "lastSeen": "2026-02-14T08:09:36.525Z",
+      "nextDue": "2026-02-15T08:09:36.525Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:09:36.525Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "dax-023": {
+      "lastSeen": "2026-02-14T08:15:40.211Z",
+      "nextDue": "2026-02-15T08:15:40.211Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T08:15:40.211Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "dax-001": {
+      "lastSeen": "2026-02-14T08:15:42.701Z",
+      "nextDue": "2026-02-15T08:15:42.701Z",
+      "interval": 1,
+      "easeFactor": 2.3,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:15:42.701Z",
+          "result": "incorrect"
+        }
+      ]
+    },
+    "sms-015": {
+      "lastSeen": "2026-02-14T08:27:35.809Z",
+      "nextDue": "2026-02-15T08:27:35.809Z",
+      "interval": 1,
+      "easeFactor": 2.6,
+      "repetitions": 1,
+      "history": [
+        {
+          "date": "2026-02-14T08:27:35.809Z",
+          "result": "correct"
+        }
+      ]
+    },
+    "sms-038": {
+      "lastSeen": "2026-02-14T08:29:14.453Z",
+      "nextDue": "2026-02-15T08:29:14.453Z",
+      "interval": 1,
+      "easeFactor": 2.3,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:14.453Z",
+          "result": "incorrect"
+        }
+      ]
+    },
+    "sms-036": {
+      "lastSeen": "2026-02-14T08:29:17.993Z",
+      "nextDue": "2026-02-15T08:29:17.993Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:17.993Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-009": {
+      "lastSeen": "2026-02-14T08:29:18.581Z",
+      "nextDue": "2026-02-15T08:29:18.581Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:18.581Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-017": {
+      "lastSeen": "2026-02-14T08:29:18.742Z",
+      "nextDue": "2026-02-15T08:29:18.742Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:18.742Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-008": {
+      "lastSeen": "2026-02-14T08:29:19.067Z",
+      "nextDue": "2026-02-15T08:29:19.067Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:19.067Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-037": {
+      "lastSeen": "2026-02-14T08:29:19.230Z",
+      "nextDue": "2026-02-15T08:29:19.230Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:19.230Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-028": {
+      "lastSeen": "2026-02-14T08:29:19.401Z",
+      "nextDue": "2026-02-15T08:29:19.401Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:19.401Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-034": {
+      "lastSeen": "2026-02-14T08:29:19.564Z",
+      "nextDue": "2026-02-15T08:29:19.564Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:19.564Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-004": {
+      "lastSeen": "2026-02-14T08:29:19.746Z",
+      "nextDue": "2026-02-15T08:29:19.746Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:19.746Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-029": {
+      "lastSeen": "2026-02-14T08:29:19.917Z",
+      "nextDue": "2026-02-15T08:29:19.917Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:19.917Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-006": {
+      "lastSeen": "2026-02-14T08:29:20.082Z",
+      "nextDue": "2026-02-15T08:29:20.082Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:20.082Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-025": {
+      "lastSeen": "2026-02-14T08:29:20.264Z",
+      "nextDue": "2026-02-15T08:29:20.264Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:20.264Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-040": {
+      "lastSeen": "2026-02-14T08:29:20.425Z",
+      "nextDue": "2026-02-15T08:29:20.425Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:20.425Z",
+          "result": "skipped"
+        }
+      ]
+    },
+    "sms-031": {
+      "lastSeen": "2026-02-14T08:29:21.318Z",
+      "nextDue": "2026-02-15T08:29:21.318Z",
+      "interval": 0,
+      "easeFactor": 2.5,
+      "repetitions": 0,
+      "history": [
+        {
+          "date": "2026-02-14T08:29:21.318Z",
+          "result": "skipped"
+        }
+      ]
+    }
+  },
+  "stats": {
+    "totalSessions": 1,
+    "totalCardsStudied": 44,
+    "currentStreak": 1,
+    "longestStreak": 1,
+    "lastSessionDate": "2026-02-14T08:29:21.318Z"
+  }
+}
