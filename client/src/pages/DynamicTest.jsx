@@ -155,6 +155,7 @@ export default function DynamicTest({ profile }) {
           <>
             {currentQuestionIndex < testData.questions.length && (
               <TestQuestion
+                key={currentQuestionIndex}
                 question={testData.questions[currentQuestionIndex]}
                 questionNumber={currentQuestionIndex + 1}
                 totalQuestions={testData.questions.length}

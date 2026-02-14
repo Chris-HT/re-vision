@@ -85,7 +85,53 @@ router.post('/generate', async (req, res) => {
       apiKey: process.env.ANTHROPIC_API_KEY
     });
 
-    const systemPrompt = `You are a quiz generator for RE-VISION, a UK-based family revision app.
+    let systemPrompt;
+
+    if (format === 'flashcard') {
+      systemPrompt = `You are a flashcard generator for RE-VISION, a UK-based family revision app.
+
+Generate exactly ${count} flashcard Q&A pairs on the topic: "${topic}"
+Target age group: ${ageGroup}
+Difficulty: ${difficulty}
+
+${additionalContext ? "Additional instructions: " + additionalContext : ""}
+
+CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation. Just the JSON object.
+
+Schema:
+{
+  "meta": {
+    "topic": "${topic}",
+    "ageGroup": "${ageGroup}",
+    "difficulty": "${difficulty}",
+    "generatedAt": "ISO date string"
+  },
+  "questions": [
+    {
+      "id": "gen-001",
+      "category": "Subtopic Name",
+      "question": "The question text",
+      "answer": "The correct answer — concise but complete",
+      "difficulty": 1,
+      "tags": ["relevant", "tags"]
+    }
+  ]
+}
+
+Rules:
+- Generate simple Q&A flashcard pairs. Do NOT include "options", "correctOption", or "format" fields.
+- For "category": assign a meaningful subtopic grouping (e.g. for "Quadratics" the categories might be "Factorising", "Completing the Square", "The Quadratic Formula"). Aim for 2-4 distinct categories across the set.
+- Answers should be concise but complete — ideal for the back of a flashcard. One to three sentences.
+- difficulty is 1 (easy), 2 (medium), or 3 (hard). Match the requested difficulty but allow slight variation.
+- UK curriculum aligned for school-age content (KS1/KS2 for primary, KS3/KS4/GCSE for secondary).
+- Age-appropriate language: simple and encouraging for primary, more technical for secondary, professional for adult.
+- Clear, unambiguous questions with definitive correct answers.
+- No trick questions for primary age group.
+- Each question must be distinct — no duplicates or near-duplicates.
+- Tags should be 1-3 relevant topic keywords.
+- All questions must be entirely self-contained and text-only. Do NOT reference diagrams, images, charts, graphs, tables, visual aids, or any external material. The student has nothing to look at except the question text and answer options.`;
+    } else {
+      systemPrompt = `You are a quiz generator for RE-VISION, a UK-based family revision app.
 
 Generate exactly ${count} questions on the topic: "${topic}"
 Target age group: ${ageGroup}
@@ -129,7 +175,9 @@ Rules:
 - Clear, unambiguous questions with definitive correct answers.
 - No trick questions for primary age group.
 - Each question must be distinct — no duplicates or near-duplicates.
-- Tags should be 1-3 relevant topic keywords.`;
+- Tags should be 1-3 relevant topic keywords.
+- All questions must be entirely self-contained and text-only. Do NOT reference diagrams, images, charts, graphs, tables, visual aids, or any external material. The student has nothing to look at except the question text and answer options.`;
+    }
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
