@@ -4,35 +4,39 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-RE-VISION is a locally-hosted flashcard and dynamic test platform for a family studying for certifications and school exams. The app runs on the home network and serves three user profiles with different age groups (adult, secondary, primary).
+RE-VISION is a locally-hosted flashcard and dynamic test platform for a family studying for certifications and school exams. The app runs on the home network (deployed to a Raspberry Pi) and serves three user profiles with different age groups (adult, secondary, primary).
+
+**Deployment model**: Develop on any machine (Windows/Mac), push to GitHub, deploy to Pi via `scripts/deploy.sh`. The Pi runs the production build with PM2.
 
 ## Tech Stack
 
 - **Frontend**: React 18 + Vite, React Router, Tailwind CSS
 - **Backend**: Express.js (ES modules)
-- **Data Storage**: SQLite via better-sqlite3 (single file: `data/revision.db`)
-- **AI**: Anthropic Claude API (claude-sonnet-4-20250514) for dynamic test generation and auto-marking
+- **Data Storage**: SQLite via better-sqlite3 (single file: `data/revision.db`, gitignored)
+- **AI**: Anthropic Claude API (claude-sonnet-4-5-20250929) for dynamic test generation and auto-marking
 - **Runtime**: Node.js
+- **Production**: PM2 process manager on Raspberry Pi 3 / Zero 2W
+- **Remote Access**: Tailscale (optional, for access outside home network)
 
 ## Development Commands
 
-### Initial Setup
+### Initial Setup (any dev machine)
 ```bash
 npm run install-all  # Install dependencies for root, client, and server
+npm run migrate      # Import JSON data into SQLite (one-time, creates data/revision.db)
 ```
 
-### Development
+### Development (any dev machine)
 ```bash
 npm run dev          # Run both client and server concurrently
 npm run client       # Run client only (Vite dev server on port 5173)
 npm run server       # Run server only (Express with --watch on port 3001)
 ```
 
-### Production
+### Production (on the Pi)
 ```bash
 npm run build        # Build client for production (outputs to client/dist)
 npm start            # Start production server (serves static build)
-npm run migrate      # Run JSON-to-SQLite migration (one-time)
 npm run prod:start   # Start with PM2 (production)
 npm run prod:stop    # Stop PM2 process
 npm run prod:restart # Restart PM2 process
@@ -43,6 +47,15 @@ npm run prod:logs    # View PM2 logs
 - Copy `.env.example` to `.env` and add your Anthropic API key
 - The `.env` file is located in the project root, not in the server directory
 - Server loads it via `dotenv.config({ path: path.join(process.cwd(), '..', '.env') })`
+
+### First-time setup on a new machine
+1. Clone the repo from GitHub
+2. `npm run install-all`
+3. Copy or create `.env` with your `ANTHROPIC_API_KEY`
+4. `npm run migrate` (imports the JSON data files into a local SQLite DB)
+5. `npm run dev`
+
+The SQLite database (`data/revision.db`) is gitignored - each machine creates its own from the JSON source files via migration. The JSON files in `data/` are the canonical seed data checked into git.
 
 ## Architecture
 
@@ -154,7 +167,7 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
 ### State Management
 - Profile state managed in `App.jsx` and passed to pages
 - Theme managed via `ThemeContext` (dark/light/high contrast)
-- Progress tracked per profile in `data/progress/:profileId.json`
+- Progress tracked per profile in SQLite (card_progress + card_history tables)
 - No global state library - uses React Context and props
 - Session results passed via React Router navigation state
 
@@ -193,6 +206,13 @@ The project is built in phases (see `brief.md` and `PHASE2.md`):
 - **Theme switching** (dark, light, high contrast)
 - **Streak tracking** and statistics
 - **Import/Export** functionality for question banks
+
+### Phase 4 (Complete)
+- **SQLite migration**: Replaced JSON file I/O with better-sqlite3 (WAL mode)
+- **Data access layer**: `server/dal/` modules separate DB ops from route handlers
+- **PM2 process management**: Auto-restart, memory limits, log management
+- **Pi deployment scripts**: One-time setup (`scripts/pi-setup.sh`) and deploy (`scripts/deploy.sh`)
+- **Tailscale**: For optional remote access outside the home network
 
 ## Important Conventions
 
@@ -240,7 +260,7 @@ Three age groups determine content difficulty and feedback tone:
 - **adult**: Technical, professional (certifications)
 
 ### Claude API Usage
-- Model: `claude-sonnet-4-20250514`
+- Model: `claude-sonnet-4-5-20250929`
 - System prompts emphasize returning **only** valid JSON (no markdown, no code fences)
 - Prompts are age-group aware
 - Supports multiple formats: `multiple_choice`, `free_text`, `mix`, `flashcard`
@@ -249,7 +269,7 @@ Three age groups determine content difficulty and feedback tone:
 
 ### Spaced Repetition System
 - **Algorithm**: Simplified SM-2 (SuperMemo 2)
-- **Storage**: Per-profile JSON files in `data/progress/:profileId.json`
+- **Storage**: SQLite tables `card_progress` and `card_history`
 - **Card Data**: Tracks interval, ease factor, repetitions, last seen, next due date
 - **Review Outcomes**: correct, incorrect, skipped
 - **Smart Review**: Surfaces cards due for review based on spaced repetition scheduling
@@ -341,5 +361,50 @@ Subjects are now stored in SQLite. To add one:
 Express binds to `0.0.0.0:3001` to allow access from:
 - Local development: `http://localhost:3001`
 - Network devices: `http://192.168.x.x:3001`
+- Tailscale: `http://pi-hostname:3001` (from anywhere, if Tailscale is set up)
 
 Network URLs are displayed on server startup using Node's `os.networkInterfaces()`.
+
+## Raspberry Pi Deployment
+
+### Target hardware
+- Raspberry Pi 3 or Zero 2W (1GB RAM)
+- PM2 memory limit set to 150MB to protect the system
+
+### First-time Pi setup
+```bash
+# On the Pi:
+git clone https://github.com/Chris-HT/re-vision.git ~/revision
+cd ~/revision
+bash scripts/pi-setup.sh
+```
+This installs Node.js 20 LTS, PM2, build tools, dependencies, builds the client, creates `.env`, runs the migration, starts PM2, and configures auto-start on boot.
+
+### Deploying updates to the Pi
+After pushing changes to GitHub from your dev machine:
+```bash
+# SSH into the Pi, then:
+bash ~/revision/scripts/deploy.sh
+```
+This runs `git pull`, `npm run install-all`, `npm run build`, and `pm2 restart revision`.
+
+### Setting up remote access (Tailscale)
+```bash
+# On the Pi:
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up
+```
+Then install Tailscale on family phones/laptops. Access the app from anywhere via the Pi's Tailscale hostname.
+
+### Development workflow
+1. Develop on any machine using `npm run dev`
+2. Commit and push to GitHub (`master` branch)
+3. SSH into Pi and run `bash ~/revision/scripts/deploy.sh`
+4. Changes are live on the home network (and via Tailscale)
+
+### Important notes
+- The SQLite DB (`data/revision.db`) is **per-machine** and gitignored
+- The Pi's DB is the production database - it accumulates real progress data
+- The JSON files in `data/` are seed data for initial migration only
+- To back up the Pi's data: copy `~/revision/data/revision.db` to a safe location
+- `better-sqlite3` has prebuilt ARM binaries, but `build-essential` + `python3` are installed as fallback
