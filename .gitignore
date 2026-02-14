@@ -7,3 +7,7 @@ dist
 client/dist
 .vscode
 .idea
+*.db
+*.db-wal
+*.db-shm
+logs/
