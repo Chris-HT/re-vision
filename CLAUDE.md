@@ -178,6 +178,7 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
 - User configures test (topic, difficulty, format, count) via `TestConfig`
 - `TestConfig` fetches the user's learning profile and appends weak areas to `additionalContext` for context-aware generation
 - During the test, each question shows feedback after submission (correct/incorrect highlights, marking results); user must click "Next Question" to advance (no auto-advance)
+- A "Quit Test" button is available during testing with a confirmation dialog
 - On the last question, button reads "See Results"
 - Results screen shows score breakdown and a "Generate Study Report" button (button-triggered to conserve API calls)
 - Study report is generated via `POST /api/report`, which saves the test session, report, and updates the learning profile
@@ -204,13 +205,18 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
 - Session results passed via React Router navigation state
 
 ### Styling Conventions
-- **Themes**: Configurable via CSS variables
-  - Dark theme (default): `from-slate-900 to-slate-800`
-  - Light theme: `from-slate-50 to-slate-100`
-  - High contrast: Enhanced visibility
+- **Themes**: Managed via CSS variables defined in `client/src/index.css`, switched via `data-theme` attribute
+  - Variables: `--bg-primary`, `--bg-secondary`, `--bg-card-solid`, `--bg-input`, `--text-primary`, `--text-secondary`, `--text-muted`, `--border-color`, `--gradient-from`, `--gradient-to`
+  - Dark theme (default), Light theme, High contrast theme
+- **Using theme colors**: Use inline `style` props with CSS variables, NOT hardcoded Tailwind color classes for base theme colors
+  - Backgrounds: `style={{ backgroundColor: 'var(--bg-card-solid)' }}` (not `bg-slate-800`)
+  - Gradients: `style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}`
+  - Text: `style={{ color: 'var(--text-primary)' }}` (not `text-white`)
+  - Borders: `style={{ borderColor: 'var(--border-color)' }}` (not `border-slate-700`)
+- **Accent/status colors** remain as Tailwind classes: `text-green-400`, `bg-blue-600`, `text-red-400`, etc.
 - Category colors defined in question files, applied via Tailwind classes
 - ADHD-friendly design: chunked content, color coding, minimal clutter
-- Responsive breakpoints handled by Tailwind
+- Responsive: Tailwind breakpoints + hamburger menu for mobile (`md:hidden` / `hidden md:flex`)
 
 ## Phase-Based Implementation
 
@@ -266,6 +272,46 @@ The project is built in phases (see `brief.md` and `PHASE2.md`):
 - **Admin-only restrictions**: Save to question bank (`POST /api/generate/save`) and import (`POST /api/subjects/import`) require admin role
 - **Profile access control**: Progress, reports, and learning profile endpoints check that the requesting user owns the data or is a parent/admin
 
+### Codebase Review (Complete)
+Comprehensive review addressing 24 issues across security, bugs, performance, and UX:
+
+**Security fixes:**
+- `POST /api/report` now checks `canAccessProfile` before generating reports for a profile
+- Error details (`error.message`) are only included in API responses when `NODE_ENV !== 'production'`
+- PIN input uses `type="password"` to mask digits
+
+**Bug fixes:**
+- `/api/report` validates answers array is non-empty; guards against missing/mismatched answer entries in breakdown
+- `TestResults` handles empty answers without NaN score
+- Rate limiter only counts requests that actually hit the Anthropic API (cached responses are free)
+- Difficulty display shows star characters instead of empty strings
+- `Results.jsx` wraps redirect in `useEffect` to avoid calling `navigate()` during render
+- `apiFetch` throws on 401 instead of returning the response (prevents callers from processing a redirect as data)
+- Subject import uses incremental suffix (`-2`, `-3`, etc.) instead of single `imp-` prefix to avoid repeat-import collisions
+- `useTimer` removes `secondsLeft` from effect deps to prevent interval churn (1000 clearInterval/setInterval per second)
+- Learning profile weak area / strength matching is now case-insensitive
+- `saveTestSession` uses defensive `testData.meta?.` access to avoid crash on malformed data
+- `ConfigPanel` includes `onConfigChange` in effect dependency array
+- Streak calculation uses local date (`getFullYear/getMonth/getDate`) instead of UTC (`toISOString().split('T')[0]`)
+- Admin `getChildren` returns all non-admin profiles (not just those in `parent_child` table)
+- FlashcardDeck keyboard handler uses refs to avoid stale closures (no more re-registering event listeners on every state change)
+
+**Broken feature fixes:**
+- FamilyDashboard "View Dashboard" button works: `Dashboard` reads `viewProfileId` from `location.state` and fetches that profile's data
+- "Practice These" (from Dashboard weak cards) and "Review Missed Cards" (from ResultsScreen) now work: `Flashcards` reads `practiceCardIds` and `reviewCards` from `location.state`
+
+**Performance:**
+- SmartReview fetches all subject questions in parallel via `Promise.all` instead of sequential `for...await`
+
+**UX improvements:**
+- Responsive mobile navigation: hamburger menu on small screens with slide-down overlay
+- Theme CSS variables applied across all pages and components (Dashboard, DynamicTest, Flashcards, SmartReview, TestResults, ResultsScreen, FlashcardDeck, TestConfig, TestQuestion) — light and high-contrast themes now work everywhere
+- Dynamic test quit button with confirmation dialog
+
+**Minor cleanups:**
+- Removed misleading `jwtSecret` export alias from `server/middleware/auth.js`
+- `totalCardsStudied` renamed to `totalCardReviews` (with backward-compat alias) for accuracy
+
 ## Important Conventions
 
 ### File Organization
@@ -314,9 +360,10 @@ The project is built in phases (see `brief.md` and `PHASE2.md`):
 - **Auth wall**: All `/api/*` routes except `/api/health` and `/api/auth/*` require valid JWT
 - **Profile access**: Users can only access their own data; admins and parents can access children's data via `canAccessProfile()`
 - **Admin-only**: Save to bank (`POST /api/generate/save`), import (`POST /api/subjects/import`)
-- **Frontend**: `apiFetch()` from `client/src/utils/api.js` attaches Bearer token; on 401, clears token and redirects to login
+- **Frontend**: `apiFetch()` from `client/src/utils/api.js` attaches Bearer token; on 401, clears token, redirects to login, and throws (callers must handle)
 - **Rate limiting**: 5 failed login attempts per profile triggers 5-minute lockout (in-memory)
 - **Parent-child links**: Stored in `parent_child` table; set during migration
+- **Admin children query**: `getChildren()` returns ALL non-admin profiles for admin role; parents see only linked children
 
 ### Error Handling
 - Server uses centralized error handler middleware
@@ -334,8 +381,9 @@ Three age groups determine content difficulty and feedback tone:
 - System prompts emphasize returning **only** valid JSON (no markdown, no code fences)
 - Prompts are age-group aware
 - Supports multiple formats: `multiple_choice`, `free_text`, `mix`, `flashcard`
-- Rate limiting: 20 API calls per hour (in-memory counter, resets on restart)
+- Rate limiting: 20 API calls per hour (in-memory counter, resets on restart); cached responses bypass the rate limiter
 - Caching: Generated questions cached by hash of request parameters
+- Error details: Only included in API error responses when `NODE_ENV !== 'production'`
 - Study reports: AI analyses test results to produce structured reports with strengths, weak areas, study plans, and encouragement
 - Learning profile context: When generating new tests, the user's cumulative weak areas are included in the prompt via `additionalContext` (not included in cache key)
 
@@ -357,7 +405,7 @@ The DAL reconstructs the same JSON shape the frontend expects.
 ### Study Reports & Learning Profiles
 - **Test sessions**: Every completed dynamic test is recorded in `test_sessions` with full question/answer data
 - **Study reports**: AI-generated reports stored in `test_reports`, linked to sessions; include summary, strengths, weak areas (with reasons and suggestions), a prioritised study plan, and encouragement
-- **Learning profiles**: `learning_profiles` stores cumulative per-user weak/strong areas as JSON; updated after each report generation; weak areas are merged by area name (most recent score kept); used as context when generating new tests
+- **Learning profiles**: `learning_profiles` stores cumulative per-user weak/strong areas as JSON; updated after each report generation; weak areas are merged by area name (case-insensitive, most recent score kept); strengths remove matching weak areas; used as context when generating new tests
 - **Report shape** (stored as JSON in `test_reports.report_data`):
   ```json
   {
@@ -370,12 +418,14 @@ The DAL reconstructs the same JSON shape the frontend expects.
   ```
 
 ### Theme System
-Themes are managed via CSS variables and React Context:
+Themes are managed via CSS variables (`client/src/index.css`) and React Context (`ThemeContext`):
 - **dark**: Slate gradient (default)
-- **light**: Light slate gradient
-- **high-contrast**: Enhanced visibility for accessibility
+- **light**: Light backgrounds, dark text
+- **high-contrast**: Black/white with enhanced visibility for accessibility
 - Theme preference stored per profile
 - Applied via `data-theme` attribute on document root
+- All pages and key components use inline `style` props with CSS variables for theme colors (not hardcoded Tailwind classes)
+- See Styling Conventions above for the pattern to follow when adding new components
 
 ## Common Development Tasks
 
