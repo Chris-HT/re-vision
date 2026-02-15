@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
 
-export default function TestConfig({ profile, onStartTest, previousTests }) {
+export default function TestConfig({ profile, onStartTest, previousTests, literalLanguage }) {
   const [formData, setFormData] = useState({
     topic: '',
     additionalContext: '',
@@ -44,7 +44,8 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
         body: JSON.stringify({
           ...formData,
           additionalContext: enrichedContext,
-          ageGroup: profile.ageGroup
+          ageGroup: profile.ageGroup,
+          literalLanguage: !!literalLanguage
         })
       });
 
@@ -88,12 +89,12 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-slate-800 rounded-lg p-6 mb-6">
-        <h2 className="text-xl font-semibold text-white mb-4">Configure Your Test</h2>
+      <div className="rounded-lg p-6 mb-6" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
+        <h2 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Configure Your Test</h2>
         
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
               Topic
             </label>
             <input
@@ -101,28 +102,30 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
               value={formData.topic}
               onChange={(e) => setFormData({ ...formData, topic: e.target.value })}
               placeholder="e.g. Photosynthesis, World War 2, Fractions..."
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border rounded-md placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
               required
               disabled={loading}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
               Additional Context (optional)
             </label>
             <textarea
               value={formData.additionalContext}
               onChange={(e) => setFormData({ ...formData, additionalContext: e.target.value })}
               placeholder="e.g. Focus on the light reactions, Year 8 level..."
-              className="w-full px-4 py-2 bg-slate-700 border border-slate-600 rounded-md text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-4 py-2 border rounded-md placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
               rows="2"
               disabled={loading}
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
               Format
             </label>
             <div className="grid grid-cols-3 gap-3">
@@ -139,8 +142,9 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
                   className={`py-2 px-4 rounded-md font-medium transition-all ${
                     formData.format === option.value
                       ? 'bg-blue-600 text-white'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      : ''
                   }`}
+                  style={formData.format !== option.value ? { backgroundColor: 'var(--bg-input)', color: 'var(--text-secondary)' } : undefined}
                 >
                   {option.label}
                 </button>
@@ -149,7 +153,7 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
               Number of Questions: {formData.count}
             </label>
             <input
@@ -161,14 +165,14 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
               disabled={loading}
               className="w-full"
             />
-            <div className="flex justify-between text-xs text-slate-400 mt-1">
+            <div className="flex justify-between text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
               <span>5</span>
               <span>20</span>
             </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-300 mb-2">
+            <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
               Difficulty
             </label>
             <div className="grid grid-cols-3 gap-3">
@@ -181,8 +185,9 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
                   className={`py-2 px-4 rounded-md font-medium transition-all capitalize ${
                     formData.difficulty === level
                       ? 'bg-green-600 text-white'
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      : ''
                   }`}
+                  style={formData.difficulty !== level ? { backgroundColor: 'var(--bg-input)', color: 'var(--text-secondary)' } : undefined}
                 >
                   {level}
                 </button>
@@ -190,14 +195,14 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
             </div>
           </div>
 
-          <div className="bg-slate-700 rounded-lg p-4">
+          <div className="rounded-lg p-4" style={{ backgroundColor: 'var(--bg-input)' }}>
             <div className="flex justify-between items-center">
-              <span className="text-slate-300">Estimated Cost:</span>
+              <span style={{ color: 'var(--text-secondary)' }}>Estimated Cost:</span>
               <span className="text-lg font-semibold text-green-400">
                 {costEstimate()}
               </span>
             </div>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs mt-1" style={{ color: 'var(--text-secondary)' }}>
               Using Claude Sonnet model
             </p>
           </div>
@@ -219,9 +224,9 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
       </div>
 
       {previousTests && previousTests.length > 0 && (
-        <div className="bg-slate-800 rounded-lg p-6">
+        <div className="rounded-lg p-6" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
           <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-semibold text-white">Previous Tests</h3>
+            <h3 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Previous Tests</h3>
             <button
               onClick={() => setShowPrevious(!showPrevious)}
               className="text-sm text-blue-400 hover:text-blue-300"
@@ -237,16 +242,17 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
                   key={test.cacheKey}
                   onClick={() => handleLoadPrevious(test.cacheKey)}
                   disabled={loading}
-                  className="w-full text-left p-3 bg-slate-700 hover:bg-slate-600 rounded-lg transition-colors"
+                  className="w-full text-left p-3 rounded-lg transition-colors"
+                  style={{ backgroundColor: 'var(--bg-input)' }}
                 >
                   <div className="flex justify-between items-start">
                     <div>
-                      <p className="text-white font-medium">{test.topic}</p>
-                      <p className="text-xs text-slate-400">
+                      <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{test.topic}</p>
+                      <p className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                         {test.count} questions • {test.format} • {test.difficulty}
                       </p>
                     </div>
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
                       {new Date(test.generatedAt).toLocaleDateString()}
                     </span>
                   </div>

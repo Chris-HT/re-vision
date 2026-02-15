@@ -15,6 +15,9 @@ function App() {
   const [profile, setProfile] = useState(null);
   const [token, setToken] = useState(null);
   const [theme, setTheme] = useState('dark');
+  const [fontSize, setFontSize] = useState('medium');
+  const [reduceAnimations, setReduceAnimations] = useState(false);
+  const [literalLanguage, setLiteralLanguage] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // On mount, restore session from localStorage
@@ -44,11 +47,12 @@ function App() {
       .finally(() => setLoading(false));
   }, []);
 
-  // When profile changes, load their theme preference
+  // When profile changes, load their preferences
   useEffect(() => {
-    if (profile?.theme) {
-      setTheme(profile.theme);
-    }
+    if (profile?.theme) setTheme(profile.theme);
+    if (profile?.fontSize) setFontSize(profile.fontSize);
+    if (profile?.reduceAnimations !== undefined) setReduceAnimations(profile.reduceAnimations);
+    if (profile?.literalLanguage !== undefined) setLiteralLanguage(profile.literalLanguage);
   }, [profile]);
 
   const handleLogin = (newToken, newProfile) => {
@@ -66,7 +70,7 @@ function App() {
 
   if (loading) {
     return (
-      <ThemeProvider initialTheme={theme}>
+      <ThemeProvider initialTheme={theme} initialFontSize={fontSize} initialReduceAnimations={reduceAnimations} initialLiteralLanguage={literalLanguage}>
         <div
           className="min-h-screen flex items-center justify-center"
           style={{
@@ -81,7 +85,7 @@ function App() {
 
   if (!token) {
     return (
-      <ThemeProvider initialTheme={theme}>
+      <ThemeProvider initialTheme={theme} initialFontSize={fontSize} initialReduceAnimations={reduceAnimations} initialLiteralLanguage={literalLanguage}>
         <div
           className="min-h-screen"
           style={{
@@ -95,7 +99,7 @@ function App() {
   }
 
   return (
-    <ThemeProvider initialTheme={theme}>
+    <ThemeProvider initialTheme={theme} initialFontSize={fontSize} initialReduceAnimations={reduceAnimations} initialLiteralLanguage={literalLanguage}>
       <Router>
         <div
           className="min-h-screen"

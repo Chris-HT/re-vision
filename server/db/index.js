@@ -28,7 +28,10 @@ db.exec(schema);
 // Add auth columns (safe to re-run — catches "duplicate column" errors)
 const alterStatements = [
   'ALTER TABLE profiles ADD COLUMN pin_hash TEXT',
-  "ALTER TABLE profiles ADD COLUMN role TEXT NOT NULL DEFAULT 'child'"
+  "ALTER TABLE profiles ADD COLUMN role TEXT NOT NULL DEFAULT 'child'",
+  "ALTER TABLE profiles ADD COLUMN font_size TEXT DEFAULT 'medium'",
+  'ALTER TABLE profiles ADD COLUMN reduce_animations INTEGER DEFAULT 0',
+  'ALTER TABLE profiles ADD COLUMN literal_language INTEGER DEFAULT 0'
 ];
 for (const sql of alterStatements) {
   try { db.exec(sql); } catch (e) {

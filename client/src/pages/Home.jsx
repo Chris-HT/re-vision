@@ -120,7 +120,7 @@ export default function Home({ profile, setProfile }) {
               <span className="text-3xl">{profile.icon}</span>
               <div className="text-left">
                 <span className="text-xl font-medium" style={{ color: 'var(--text-primary)' }}>
-                  Welcome back, {profile.name}!
+                  Hello, {profile.name}
                 </span>
                 <div className="flex items-center space-x-4 text-sm" style={{ color: 'var(--text-secondary)' }}>
                   {stats?.lastSessionDate && (
@@ -128,7 +128,7 @@ export default function Home({ profile, setProfile }) {
                   )}
                   {stats?.currentStreak > 0 && (
                     <span className="text-orange-400 font-medium">
-                      {stats.currentStreak} day streak!
+                      {stats.currentStreak} days in a row
                     </span>
                   )}
                   {stats?.dueToday > 0 && (

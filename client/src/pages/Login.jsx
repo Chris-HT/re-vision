@@ -14,7 +14,7 @@ export default function Login({ onLogin }) {
     fetch('/api/auth/profiles')
       .then(res => res.json())
       .then(data => setProfiles(data.profiles || []))
-      .catch(() => setError('Failed to load profiles'))
+      .catch(() => setError('Could not load profiles. Check your connection and try again.'))
       .finally(() => setLoading(false));
   }, []);
 
@@ -43,13 +43,19 @@ export default function Login({ onLogin }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Login failed');
+        let errorMsg = data.error || 'Login failed';
+        if (data.attemptsRemaining !== undefined) {
+          errorMsg = `Incorrect PIN. ${data.attemptsRemaining} attempt${data.attemptsRemaining !== 1 ? 's' : ''} remaining.`;
+        } else if (data.code === 'RATE_LIMIT') {
+          errorMsg = 'Too many attempts. Please wait 5 minutes and try again.';
+        }
+        setError(errorMsg);
         setSubmitting(false);
         return;
       }
       onLogin(data.token, data.profile);
     } catch {
-      setError('Connection error. Try again.');
+      setError('Could not connect to server. Check your connection and try again.');
       setSubmitting(false);
     }
   };
@@ -84,7 +90,7 @@ export default function Login({ onLogin }) {
       }
       onLogin(data.token, data.profile);
     } catch {
-      setError('Connection error. Try again.');
+      setError('Could not connect to server. Check your connection and try again.');
       setConfirmPin(null);
       setSubmitting(false);
     }

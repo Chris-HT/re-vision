@@ -45,25 +45,62 @@
   --gradient-to: #1a1a1a;
 }
 
+[data-theme="calm"] {
+  --bg-primary: #faf6f1;
+  --bg-secondary: #f5ede4;
+  --bg-card: #ffffff;
+  --bg-card-solid: #fff8f0;
+  --bg-input: #f0e8de;
+  --text-primary: #3d3229;
+  --text-secondary: #6b5d50;
+  --text-muted: #9a8b7c;
+  --border-color: #ddd0c2;
+  --gradient-from: #faf6f1;
+  --gradient-to: #f0e8de;
+}
+
+/* Font size scaling — Tailwind uses rem so changing root font-size scales everything */
+[data-font-size="small"] { font-size: 14px; }
+[data-font-size="medium"] { font-size: 16px; }
+[data-font-size="large"] { font-size: 18px; }
+
 @layer base {
   body {
     @apply antialiased;
+    line-height: 1.6;
   }
+}
+
+/* Reduced motion — respects both OS preference and app toggle */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+[data-reduce-animations="true"] *,
+[data-reduce-animations="true"] *::before,
+[data-reduce-animations="true"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
 }
 
 @layer utilities {
   .perspective-1000 {
     perspective: 1000px;
   }
-  
+
   .transform-style-preserve-3d {
     transform-style: preserve-3d;
   }
-  
+
   .backface-hidden {
     backface-visibility: hidden;
   }
-  
+
   .rotate-y-180 {
     transform: rotateY(180deg);
   }

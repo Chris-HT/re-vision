@@ -65,7 +65,7 @@ router.post('/generate', async (req, res) => {
       });
     }
 
-    const { topic, ageGroup, difficulty, count, format, additionalContext } = req.body;
+    const { topic, ageGroup, difficulty, count, format, additionalContext, literalLanguage } = req.body;
 
     if (!topic || !ageGroup || !difficulty || !count || !format) {
       return res.status(400).json({
@@ -99,13 +99,17 @@ router.post('/generate', async (req, res) => {
       return res.status(429).json({
         error: 'Rate limit exceeded',
         code: 'RATE_LIMIT',
-        userMessage: "You've been busy! Try again in a bit."
+        userMessage: 'Too many requests. Please wait a few minutes and try again.'
       });
     }
 
     const anthropic = getAnthropicClient();
 
     let systemPrompt;
+
+    const literalRule = literalLanguage
+      ? '\nIMPORTANT: Use clear, direct language only. Do not use idioms, metaphors, sarcasm, or figurative speech.\n'
+      : '';
 
     if (format === 'flashcard') {
       systemPrompt = `You are a flashcard generator for RE-VISION, a UK-based family revision app.
@@ -114,7 +118,7 @@ Generate exactly ${count} flashcard Q&A pairs on the topic: "${topic}"
 Target age group: ${ageGroup}
 Difficulty: ${difficulty}
 
-${additionalContext ? "Additional instructions: " + additionalContext : ""}
+${additionalContext ? "Additional instructions: " + additionalContext : ""}${literalRule}
 
 CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation. Just the JSON object.
 
@@ -158,7 +162,7 @@ Target age group: ${ageGroup}
 Difficulty: ${difficulty}
 Format: ${format}
 
-${additionalContext ? "Additional instructions: " + additionalContext : ""}
+${additionalContext ? "Additional instructions: " + additionalContext : ""}${literalRule}
 
 CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation. Just the JSON object.
 
@@ -277,11 +281,11 @@ router.post('/mark', async (req, res) => {
       return res.status(429).json({
         error: 'Rate limit exceeded',
         code: 'RATE_LIMIT',
-        userMessage: "You've been busy! Try again in a bit."
+        userMessage: 'Too many requests. Please wait a few minutes and try again.'
       });
     }
 
-    const { question, correctAnswer, studentAnswer, ageGroup } = req.body;
+    const { question, correctAnswer, studentAnswer, ageGroup, literalLanguage } = req.body;
 
     if (!question || !correctAnswer || !studentAnswer || !ageGroup) {
       return res.status(400).json({
@@ -292,12 +296,17 @@ router.post('/mark', async (req, res) => {
 
     const anthropic = getAnthropicClient();
 
+    const markLiteralRule = literalLanguage
+      ? '\nIMPORTANT: Use clear, direct language only. Do not use idioms, metaphors, sarcasm, or figurative speech in feedback and encouragement.\n'
+      : '';
+
     const systemPrompt = `You are a friendly, encouraging teacher marking a student's answer in a family revision app called RE-VISION.
 
 Question: ${question}
 Correct answer: ${correctAnswer}
 Student's answer: ${studentAnswer}
 Student age group: ${ageGroup}
+${markLiteralRule}
 
 CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
 
@@ -402,11 +411,11 @@ router.post('/report', async (req, res) => {
       return res.status(429).json({
         error: 'Rate limit exceeded',
         code: 'RATE_LIMIT',
-        userMessage: "You've been busy! Try again in a bit."
+        userMessage: 'Too many requests. Please wait a few minutes and try again.'
       });
     }
 
-    const { profileId, testData, answers } = req.body;
+    const { profileId, testData, answers, literalLanguage } = req.body;
 
     if (!profileId || !testData || !answers) {
       return res.status(400).json({ error: 'Missing required fields', code: 'INVALID_REQUEST' });
@@ -449,6 +458,10 @@ router.post('/report', async (req, res) => {
       ageRules = 'Use technical, professional language. Be direct and specific. Up to 5 study plan items.';
     }
 
+    const reportLiteralRule = literalLanguage
+      ? 'IMPORTANT: Use clear, direct language only. Do not use idioms, metaphors, sarcasm, or figurative speech in the report, encouragement, and suggestions.\n'
+      : '';
+
     const systemPrompt = `You are a study advisor for RE-VISION, a UK-based family revision app.
 Analyse this test performance and generate a structured study report.
 
@@ -461,6 +474,7 @@ Question breakdown:
 ${breakdown}
 
 ${ageRules}
+${reportLiteralRule}
 
 CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
 

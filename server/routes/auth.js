@@ -33,6 +33,20 @@ function clearFailures(profileId) {
   loginAttempts.delete(profileId);
 }
 
+function toAuthProfile(profile) {
+  return {
+    id: profile.id,
+    name: profile.name,
+    icon: profile.icon,
+    ageGroup: profile.age_group,
+    role: profile.role,
+    theme: profile.theme,
+    fontSize: profile.font_size || 'medium',
+    reduceAnimations: !!profile.reduce_animations,
+    literalLanguage: !!profile.literal_language
+  };
+}
+
 // GET /api/auth/profiles — public, for login screen
 router.get('/profiles', (req, res, next) => {
   try {
@@ -74,7 +88,13 @@ router.post('/login', async (req, res, next) => {
     const valid = await bcrypt.compare(pin, profile.pin_hash);
     if (!valid) {
       recordFailure(profileId);
-      return res.status(401).json({ error: 'Incorrect PIN' });
+      const entry = loginAttempts.get(profileId);
+      const attemptsRemaining = Math.max(0, 5 - (entry?.failures || 0));
+      return res.status(401).json({
+        error: 'Incorrect PIN',
+        attemptsRemaining,
+        code: attemptsRemaining === 0 ? 'RATE_LIMIT' : undefined
+      });
     }
 
     clearFailures(profileId);
@@ -87,14 +107,7 @@ router.post('/login', async (req, res, next) => {
 
     res.json({
       token,
-      profile: {
-        id: profile.id,
-        name: profile.name,
-        icon: profile.icon,
-        ageGroup: profile.age_group,
-        role: profile.role,
-        theme: profile.theme
-      }
+      profile: toAuthProfile(profile)
     });
   } catch (error) {
     next(error);
@@ -133,14 +146,7 @@ router.post('/set-pin', async (req, res, next) => {
 
     res.json({
       token,
-      profile: {
-        id: profile.id,
-        name: profile.name,
-        icon: profile.icon,
-        ageGroup: profile.age_group,
-        role: profile.role,
-        theme: profile.theme
-      }
+      profile: toAuthProfile(profile)
     });
   } catch (error) {
     next(error);
@@ -155,14 +161,7 @@ router.get('/me', authenticate, (req, res, next) => {
       return res.status(404).json({ error: 'Profile not found' });
     }
     res.json({
-      profile: {
-        id: profile.id,
-        name: profile.name,
-        icon: profile.icon,
-        ageGroup: profile.age_group,
-        role: profile.role,
-        theme: profile.theme
-      }
+      profile: toAuthProfile(profile)
     });
   } catch (error) {
     next(error);
@@ -203,7 +202,7 @@ router.post('/change-pin', authenticate, async (req, res, next) => {
 // GET /api/auth/children — get linked children (admin/parent only)
 router.get('/children', authenticate, requireRole('admin', 'parent'), (req, res, next) => {
   try {
-    const children = getChildren(req.user.profileId);
+    const children = getChildren(req.user.profileId, req.user.role);
     res.json({ children });
   } catch (error) {
     next(error);

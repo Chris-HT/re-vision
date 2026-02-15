@@ -6,6 +6,7 @@ export default function TestResults({
   testData,
   answers,
   profile,
+  literalLanguage,
   onRetry,
   onNewTest,
   onSaveToBank
@@ -17,9 +18,9 @@ export default function TestResults({
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState(null);
 
-  const totalScore = Math.round(
-    answers.reduce((sum, a) => sum + a.score, 0) / answers.length
-  );
+  const totalScore = answers.length > 0
+    ? Math.round(answers.reduce((sum, a) => sum + (a?.score || 0), 0) / answers.length)
+    : 0;
 
   const getScoreColor = (score) => {
     if (score >= 70) return 'from-green-500 to-green-600';
@@ -72,7 +73,8 @@ export default function TestResults({
         body: JSON.stringify({
           profileId: profile?.id,
           testData,
-          answers
+          answers,
+          literalLanguage: !!literalLanguage
         })
       });
 
@@ -92,49 +94,49 @@ export default function TestResults({
 
   return (
     <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-slate-800 rounded-xl p-8 mb-6">
+      <div className="rounded-xl p-8 mb-6" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
         <div className="text-center mb-8">
-          <h2 className="text-3xl font-bold text-white mb-4">Test Complete!</h2>
+          <h2 className="text-3xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Test finished</h2>
           <div className={`inline-flex items-center justify-center w-32 h-32 rounded-full bg-gradient-to-r ${getScoreColor(totalScore)} mb-4`}>
-            <span className="text-4xl font-bold text-white">{totalScore}%</span>
+            <span className="text-4xl font-bold" style={{ color: 'var(--text-primary)' }}>{totalScore}%</span>
           </div>
-          <p className="text-lg text-slate-300">
+          <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>
             You answered {answers.filter(a => a.isCorrect).length} out of {answers.length} questions correctly
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-          <div className="bg-slate-700 rounded-lg p-4 text-center">
+          <div className="rounded-lg p-4 text-center" style={{ backgroundColor: 'var(--bg-input)' }}>
             <div className="text-2xl font-bold text-green-400">
               {answers.filter(a => a.score >= 70).length}
             </div>
-            <div className="text-sm text-slate-400 mt-1">High Scores (70%+)</div>
+            <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>High Scores (70%+)</div>
           </div>
-          <div className="bg-slate-700 rounded-lg p-4 text-center">
+          <div className="rounded-lg p-4 text-center" style={{ backgroundColor: 'var(--bg-input)' }}>
             <div className="text-2xl font-bold text-amber-400">
               {answers.filter(a => a.score >= 40 && a.score < 70).length}
             </div>
-            <div className="text-sm text-slate-400 mt-1">Partial (40-69%)</div>
+            <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Partial (40-69%)</div>
           </div>
-          <div className="bg-slate-700 rounded-lg p-4 text-center">
+          <div className="rounded-lg p-4 text-center" style={{ backgroundColor: 'var(--bg-input)' }}>
             <div className="text-2xl font-bold text-red-400">
               {answers.filter(a => a.score < 40).length}
             </div>
-            <div className="text-sm text-slate-400 mt-1">Need Review (&lt;40%)</div>
+            <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Need Review (&lt;40%)</div>
           </div>
         </div>
 
         <div className="space-y-4">
-          <h3 className="text-xl font-semibold text-white mb-4">Question Breakdown</h3>
+          <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Question Breakdown</h3>
           
           {testData.questions.map((question, index) => {
             const answer = answers[index];
             
             return (
-              <div key={question.id} className="bg-slate-700 rounded-lg p-4">
+              <div key={question.id} className="rounded-lg p-4" style={{ backgroundColor: 'var(--bg-input)' }}>
                 <div className="flex justify-between items-start mb-3">
                   <div className="flex-1">
-                    <p className="text-white font-medium mb-1">
+                    <p className="font-medium mb-1" style={{ color: 'var(--text-primary)' }}>
                       Q{index + 1}: {question.question}
                     </p>
                   </div>
@@ -145,8 +147,8 @@ export default function TestResults({
 
                 <div className="space-y-2 text-sm">
                   <div className="flex items-start">
-                    <span className="text-slate-400 mr-2">Your answer:</span>
-                    <span className="text-slate-200 flex-1">
+                    <span className="mr-2" style={{ color: 'var(--text-secondary)' }}>Your answer:</span>
+                    <span className="flex-1" style={{ color: 'var(--text-secondary)' }}>
                       {answer.format === 'multiple_choice' 
                         ? question.options?.find(o => o.startsWith(answer.studentAnswer))
                         : answer.studentAnswer}
@@ -155,18 +157,18 @@ export default function TestResults({
 
                   {(!answer.isCorrect || answer.format === 'free_text') && (
                     <div className="flex items-start">
-                      <span className="text-slate-400 mr-2">Correct answer:</span>
+                      <span className="mr-2" style={{ color: 'var(--text-secondary)' }}>Correct answer:</span>
                       <span className="text-green-300 flex-1">{question.answer}</span>
                     </div>
                   )}
 
                   {answer.feedback && (
-                    <div className="mt-2 p-3 bg-slate-800 rounded">
-                      <p className="text-slate-200">{answer.feedback}</p>
+                    <div className="mt-2 p-3 rounded" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
+                      <p style={{ color: 'var(--text-secondary)' }}>{answer.feedback}</p>
                       {answer.keyPointsMissed?.length > 0 && (
                         <div className="mt-2 flex flex-wrap gap-1">
                           {answer.keyPointsMissed.map((point, i) => (
-                            <span key={i} className="px-2 py-0.5 bg-slate-600 rounded text-xs text-slate-300">
+                            <span key={i} className="px-2 py-0.5 rounded text-xs" style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-secondary)' }}>
                               {point}
                             </span>
                           ))}
@@ -204,7 +206,7 @@ export default function TestResults({
               disabled={saving || saved}
               className="flex-1 py-3 bg-green-600 hover:bg-green-500 disabled:bg-slate-600 text-white font-medium rounded-lg transition-colors"
             >
-              {saving ? 'Saving...' : saved ? 'Saved! ✓' : 'Save to Bank'}
+              {saving ? 'Saving questions...' : saved ? 'Saved to bank' : 'Save to Bank'}
             </button>
           )}
         </div>
@@ -212,7 +214,7 @@ export default function TestResults({
         {saved && (
           <div className="mt-4 bg-green-900/50 border border-green-600 rounded-lg p-4">
             <p className="text-green-200">
-              Questions saved successfully! They'll now appear in Flashcard mode.
+              Saved {testData.questions.length} questions to the question bank. They will appear in Flashcard mode.
             </p>
           </div>
         )}
@@ -224,10 +226,10 @@ export default function TestResults({
         )}
 
         {/* Study Report Section */}
-        <div className="mt-8 border-t border-slate-600 pt-8">
+        <div className="mt-8 border-t pt-8" style={{ borderColor: 'var(--border-color)' }}>
           {!report && !reportLoading && (
             <div className="text-center">
-              <p className="text-slate-400 mb-4">Want personalised study advice based on your results?</p>
+              <p className="mb-4" style={{ color: 'var(--text-secondary)' }}>Want personalised study advice based on your results?</p>
               <button
                 onClick={handleGenerateReport}
                 disabled={!profile}
@@ -236,7 +238,7 @@ export default function TestResults({
                 Generate Study Report
               </button>
               {!profile && (
-                <p className="text-slate-500 text-sm mt-2">Select a profile to generate reports</p>
+                <p className="text-sm mt-2" style={{ color: 'var(--text-muted)' }}>Select a profile to generate reports</p>
               )}
             </div>
           )}
@@ -244,13 +246,13 @@ export default function TestResults({
           {reportLoading && (
             <div className="text-center py-8">
               <div className="inline-block w-8 h-8 border-4 border-purple-400 border-t-transparent rounded-full animate-spin mb-4"></div>
-              <p className="text-slate-300">Analysing your performance...</p>
+              <p style={{ color: 'var(--text-secondary)' }}>Generating your study report...</p>
             </div>
           )}
 
           {reportError && (
             <div className="bg-red-900/50 border border-red-600 rounded-lg p-4 mb-4">
-              <p className="text-red-200">{reportError}</p>
+              <p className="text-red-200">Could not generate report: {reportError}</p>
               <button
                 onClick={handleGenerateReport}
                 className="mt-2 text-sm text-red-300 hover:text-red-200 underline"
@@ -262,7 +264,7 @@ export default function TestResults({
 
           {report && (
             <div>
-              <h3 className="text-xl font-semibold text-white mb-4">Study Report</h3>
+              <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Study Report</h3>
               <StudyReport report={report} />
             </div>
           )}

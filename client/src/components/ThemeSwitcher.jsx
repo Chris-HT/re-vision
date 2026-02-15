@@ -5,6 +5,7 @@ import { useTheme } from '../context/ThemeContext';
 const themes = [
   { id: 'dark', label: 'Dark', icon: '' },
   { id: 'light', label: 'Light', icon: '' },
+  { id: 'calm', label: 'Calm', icon: '' },
   { id: 'high-contrast', label: 'High Contrast', icon: '' }
 ];
 
@@ -57,15 +58,19 @@ export default function ThemeSwitcher({ profileId, onThemeChange }) {
       </button>
 
       {isOpen && (
-        <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg border border-slate-600 bg-slate-800 z-50">
+        <div
+          className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg border z-50"
+          style={{ backgroundColor: 'var(--bg-card-solid)', borderColor: 'var(--border-color)' }}
+        >
           <div className="py-1">
             {themes.map((t) => (
               <button
                 key={t.id}
                 onClick={() => handleSelect(t.id)}
-                className={`w-full text-left px-4 py-2 text-sm hover:bg-slate-700 transition-colors flex items-center space-x-2 ${
-                  theme === t.id ? 'text-blue-400' : 'text-slate-300'
+                className={`w-full text-left px-4 py-2 text-sm transition-colors flex items-center space-x-2 ${
+                  theme === t.id ? 'text-blue-400' : ''
                 }`}
+                style={theme !== t.id ? { color: 'var(--text-secondary)' } : undefined}
               >
                 <span>{t.icon}</span>
                 <span>{t.label}</span>

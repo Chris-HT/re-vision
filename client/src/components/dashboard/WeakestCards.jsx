@@ -7,7 +7,7 @@ export default function WeakestCards({ cards, onPractice }) {
     return (
       <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
         <h3 className="text-lg font-semibold text-white mb-4">Weakest Cards</h3>
-        <p className="text-slate-400">No weak cards yet. Keep studying!</p>
+        <p className="text-slate-400">No cards need extra practice yet.</p>
       </div>
     );
   }

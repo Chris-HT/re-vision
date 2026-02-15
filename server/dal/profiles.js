@@ -31,7 +31,10 @@ export function updateProfile(profileId, updates) {
     theme: 'theme',
     favourites: 'favourites',
     name: 'name',
-    icon: 'icon'
+    icon: 'icon',
+    fontSize: 'font_size',
+    reduceAnimations: 'reduce_animations',
+    literalLanguage: 'literal_language'
   };
 
   const sets = [];
@@ -64,6 +67,9 @@ function toProfile(row) {
     ageGroup: row.age_group,
     theme: row.theme,
     role: row.role || 'child',
-    favourites: row.favourites ? JSON.parse(row.favourites) : []
+    favourites: row.favourites ? JSON.parse(row.favourites) : [],
+    fontSize: row.font_size || 'medium',
+    reduceAnimations: !!row.reduce_animations,
+    literalLanguage: !!row.literal_language
   };
 }
