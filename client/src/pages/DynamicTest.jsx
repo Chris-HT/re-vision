@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
+import { useGamification } from '../context/GamificationContext';
 import TestConfig from '../components/TestConfig';
 import TestQuestion from '../components/TestQuestion';
 import TestResults from '../components/TestResults';
@@ -9,6 +10,7 @@ import TestResults from '../components/TestResults';
 export default function DynamicTest({ profile }) {
   const navigate = useNavigate();
   const { literalLanguage } = useTheme();
+  const gam = useGamification();
   const [testState, setTestState] = useState('config'); // config, testing, results
   const [testData, setTestData] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -68,6 +70,7 @@ export default function DynamicTest({ profile }) {
     if (currentQuestionIndex < testData.questions.length - 1) {
       setCurrentQuestionIndex(currentQuestionIndex + 1);
     } else {
+      if (gam) gam.syncToServer();
       setTestState('results');
     }
   };

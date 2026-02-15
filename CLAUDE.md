@@ -114,6 +114,8 @@ All data is stored in SQLite (`data/revision.db`) with these tables:
 - **generated_cache** (AI-generated question cache)
 - **test_sessions** + **test_reports** (dynamic test history and AI study reports)
 - **learning_profiles** (cumulative per-user weak/strong area tracking)
+- **profile_xp** + **subject_xp** + **profile_coins** + **coin_transactions** (gamification XP/coins)
+- **achievements** + **profile_achievements** (achievement definitions and per-user unlocks)
 
 The DAL layer (`server/dal/`) provides functions that return JSON shapes matching the original API responses, so the frontend requires zero changes.
 
@@ -127,6 +129,12 @@ See `server/db/schema.sql` for full schema. Key tables:
 - `test_sessions`: id, profile_id, topic, age_group, difficulty, format, question_count, score, completed_at, questions_data (JSON), answers_data (JSON)
 - `test_reports`: id, session_id (unique), profile_id, report_data (JSON), generated_at
 - `learning_profiles`: profile_id, weak_areas (JSON), strong_areas (JSON), topics_tested (JSON), updated_at
+- `profile_xp`: profile_id (PK), total_xp, level
+- `subject_xp`: profile_id + subject_id (PK), xp
+- `profile_coins`: profile_id (PK), coins
+- `coin_transactions`: id, profile_id, amount, reason, created_at
+- `achievements`: id (PK), name, description, icon, category, threshold (seeded with 10 achievements)
+- `profile_achievements`: profile_id + achievement_id (PK), unlocked_at
 - `profiles` (auth columns added via ALTER): pin_hash, role (admin/parent/child)
 - `parent_child`: parent_id, child_id (links parents to children)
 
@@ -167,6 +175,11 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
 - `POST /api/progress/:profileId/record` - Record a card review session
 - `GET /api/progress/:profileId/due` - Get cards due for review (spaced repetition)
 - `GET /api/progress/:profileId/stats` - Get learning statistics and analytics
+
+### Gamification API (`server/routes/gamification.js`) — authenticated
+- `GET /api/gamification/:profileId` - Returns XP, level, coins, achievement counts. Uses `canAccessProfile`.
+- `POST /api/gamification/:profileId/award` - Award XP and/or coins, check achievements. Body: `{ xp, coins, reason, subjectId? }`. Returns updated totals + newly unlocked achievements.
+- `GET /api/gamification/:profileId/achievements` - Returns all achievements with per-profile unlock status
 
 ### Generated Question Caching
 - Generated questions are cached in the `generated_cache` SQLite table
@@ -312,13 +325,28 @@ Comprehensive review addressing 24 issues across security, bugs, performance, an
 - Removed misleading `jwtSecret` export alias from `server/middleware/auth.js`
 - `totalCardsStudied` renamed to `totalCardReviews` (with backward-compat alias) for accuracy
 
+### Phase 7b (Complete)
+- **XP and levelling**: Each card review and test answer awards XP; level calculated from total XP using curve `xpRequired = 100 * 1.5^(level-1)`
+- **Coins**: Earned alongside XP (5 per correct flashcard, 8/3 per test answer by score, 20 per test completion); tracked in `profile_coins` with transaction log
+- **Combo multiplier**: Consecutive correct answers multiply XP — 1.5x at 3 streak, 2x at 5 streak; resets on incorrect/skip
+- **Per-answer reward popups**: Floating "+10 XP" / "+5 coins" notifications appear after each answer (auto-dismiss 1.5s); respects `reduceAnimations` setting
+- **Level-up modal**: Celebration overlay with CSS confetti when levelling up (respects `reduceAnimations`)
+- **Achievement toasts**: Slide-in notifications when achievements unlock (auto-dismiss 3s)
+- **10 seeded achievements**: `first-card`, `ten-cards`, `hundred-cards`, `first-test`, `five-tests`, `perfect-score`, `three-streak`, `seven-streak`, `level-five`, `level-ten` — checked server-side against real stats
+- **GamificationContext**: Client-side state management with optimistic updates; accumulated XP/coins synced to server at session boundaries via `POST /api/gamification/:profileId/award`
+- **Navbar integration**: XPBar (level + progress bar) and CoinCounter shown in desktop nav and mobile hamburger menu
+- **Dashboard achievements**: Grid of achievement cards (unlocked with date, locked as mystery) in Dashboard page
+- **Server hooks**: `PUT /api/progress/:profileId/card/:cardId` returns gamification data alongside card progress; `POST /api/report` awards test completion bonus (50 XP + 20 coins)
+- **Subject XP**: Per-subject XP tracking via `subject_xp` table (awarded when `subjectId` provided in award call)
+
 ## Important Conventions
 
 ### File Organization
 - **Components**: Reusable UI elements
   - Core: `FlashcardDeck`, `ConfigPanel`, `Navbar`, `PinInput`
-  - Dashboard: `StatsCards`, `AccuracyChart`, `CategoryStrength`, `WeakestCards`, `Heatmap`, `TestReports`
-  - Features: `ExportPDF`, `ImportExport`, `Timer`, `ThemeSwitcher`, `ColorPresets`, `StudyReport`
+  - Dashboard: `StatsCards`, `AccuracyChart`, `CategoryStrength`, `WeakestCards`, `Heatmap`, `TestReports`, `Achievements`
+  - Features: `ExportPDF`, `ImportExport`, `Timer`, `ThemeSwitcher`, `ColorPresets`, `StudyReport`, `XPBar`, `CoinCounter`
+  - Gamification: `RewardPopup`, `LevelUpModal`, `AchievementToast`, `RewardRenderer`
   - Wizards: `FlashcardGenerationWizard`, `TestConfig`, `TestQuestion`, `TestResults`
 - **Pages**: Route-level components
   - `Login`, `Home`, `Flashcards`, `DynamicTest`, `Results`, `Dashboard`, `SmartReview`, `FamilyDashboard`
@@ -328,6 +356,7 @@ Comprehensive review addressing 24 issues across security, bugs, performance, an
   - `useTimer` - Exam timer functionality
 - **Context**: React context providers
   - `ThemeContext` - Theme switching (dark/light/high contrast)
+  - `GamificationContext` - XP, level, coins, combo, reward queue, server sync
 - **Utils**: Frontend utilities
   - `api.js` - Authenticated fetch wrapper (`apiFetch`)
 - **Routes**: Express route handlers (thin controllers)
@@ -335,6 +364,7 @@ Comprehensive review addressing 24 issues across security, bugs, performance, an
   - `questions.js` - Question bank operations
   - `claude.js` - AI generation, marking, study reports, and learning profiles
   - `progress.js` - Progress tracking and spaced repetition
+  - `gamification.js` - XP, coins, achievements endpoints
 - **DAL**: Data access layer (all DB operations)
   - `auth.js` - Login profiles, PIN management, parent-child queries
   - `subjects.js` - Subjects, themes, questions, categories, import/export
@@ -342,6 +372,7 @@ Comprehensive review addressing 24 issues across security, bugs, performance, an
   - `progress.js` - Card progress, history, stats, due cards
   - `cache.js` - Generated question cache
   - `reports.js` - Test sessions, test reports, learning profiles
+  - `gamification.js` - XP, levels, coins, achievements, unlock checking
 - **DB**: Database setup
   - `index.js` - SQLite singleton with WAL mode
   - `schema.sql` - Table definitions
@@ -417,6 +448,25 @@ The DAL reconstructs the same JSON shape the frontend expects.
   }
   ```
 
+### Gamification System
+XP, levels, coins, and achievements are managed via `GamificationContext` (client) and `server/dal/gamification.js` (server):
+- **XP & Levels**: XP awards are optimistic (applied client-side immediately), synced to server at session boundaries. Level curve: `xpRequired = 100 * 1.5^(level-1)` — Level 1→2: 100 XP, Level 2→3: 150, Level 3→4: 225, etc.
+- **Coins**: Earned alongside XP for correct answers and test completions. Tracked with transaction log.
+- **Combo**: Consecutive correct answers multiply XP — 1x base, 1.5x at 3 combo, 2x at 5 combo. Resets on incorrect/skip.
+- **Reward Queue**: `GamificationContext` maintains a FIFO queue of reward notifications (`xp`, `coins`, `level-up`, `achievement`). `RewardRenderer` in `App.jsx` processes them sequentially.
+- **Achievements**: 10 seeded in `achievements` table (cards, tests, streaks, levels categories). Checked server-side via `checkAndUnlockAchievements()` which queries real stats from `card_history`, `test_sessions`, `profile_stats`, and `profile_xp`.
+- **Server hooks**: Card review endpoint (`PUT /api/progress/:profileId/card/:cardId`) awards XP/coins per card. Report endpoint (`POST /api/report`) awards test completion bonus.
+- **Animations**: `reward-popup`, `slide-in-right`, and `confetti` keyframes in `index.css`. All respect `reduceAnimations` preference (static text fallbacks).
+
+| Action | XP | Coins |
+|--------|-----|-------|
+| Flashcard correct | 10 | 5 |
+| Flashcard incorrect/skip | 3 | 0 |
+| Test answer >= 70% | 15 | 8 |
+| Test answer 40-69% | 8 | 3 |
+| Test answer < 40% | 3 | 0 |
+| Test completion bonus | 50 | 20 |
+
 ### Theme System
 Themes are managed via CSS variables (`client/src/index.css`) and React Context (`ThemeContext`):
 - **dark**: Slate gradient (default)
@@ -469,10 +519,12 @@ Subjects are now stored in SQLite. To add one:
 - `server/dal/progress.js` - Data access: card progress, history, stats, due cards
 - `server/dal/cache.js` - Data access: generated question cache
 - `server/dal/reports.js` - Data access: test sessions, reports, learning profiles
+- `server/dal/gamification.js` - Data access: XP, levels, coins, achievements, unlock logic
 - `server/routes/auth.js` - Authentication routes (login, PIN setup, token validation, children)
 - `server/routes/claude.js` - AI-powered question generation, marking, study reports, and learning profiles
 - `server/routes/questions.js` - Question bank API routes (delegates to DAL, admin-only for save/import)
-- `server/routes/progress.js` - Progress tracking API routes (delegates to DAL, profile access checks)
+- `server/routes/progress.js` - Progress tracking API routes (delegates to DAL, profile access checks, gamification hooks)
+- `server/routes/gamification.js` - Gamification API routes (XP, coins, achievements)
 - `server/middleware/auth.js` - JWT authentication, role checking, profile access control
 - `server/utils/spacedRepetition.js` - SM-2 algorithm for review scheduling
 - `server/utils/streaks.js` - Statistics and streak tracking
@@ -484,11 +536,16 @@ Subjects are now stored in SQLite. To add one:
 - `client/src/pages/FamilyDashboard.jsx` - Admin/parent view of children's stats and reports
 - `client/src/components/PinInput.jsx` - 4-6 digit PIN input with auto-advance
 - `client/src/context/ThemeContext.jsx` - Theme provider (dark/light/high contrast)
-- `client/src/pages/Dashboard.jsx` - Progress analytics, charts, and test reports
+- `client/src/context/GamificationContext.jsx` - Gamification state: XP, level, coins, combo, reward queue, server sync
+- `client/src/pages/Dashboard.jsx` - Progress analytics, charts, test reports, and achievements
 - `client/src/pages/DynamicTest.jsx` - Dynamic test flow with pause-for-feedback
 - `client/src/pages/SmartReview.jsx` - Spaced repetition study mode
 - `client/src/components/StudyReport.jsx` - Renders AI study report (strengths, weak areas, study plan)
 - `client/src/components/dashboard/TestReports.jsx` - Dashboard section listing past test reports
+- `client/src/components/dashboard/Achievements.jsx` - Dashboard achievement gallery (unlocked/locked)
+- `client/src/components/RewardRenderer.jsx` - Global reward queue renderer (popups, level-up, toasts)
+- `client/src/components/XPBar.jsx` - Navbar level and XP progress bar
+- `client/src/components/CoinCounter.jsx` - Navbar coin display
 - `client/src/hooks/useProgress.js` - Progress tracking hook
 - `client/vite.config.js` - API proxy configuration
 

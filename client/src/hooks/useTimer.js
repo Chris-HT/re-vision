@@ -22,7 +22,7 @@ export function useTimer(initialSeconds, { onExpire, autoStart = false } = {}) {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isRunning, secondsLeft]);
+  }, [isRunning]);
 
   const start = useCallback(() => setIsRunning(true), []);
   const pause = useCallback(() => setIsRunning(false), []);

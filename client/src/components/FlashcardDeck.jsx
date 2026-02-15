@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { apiFetch } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
+import { useGamification } from '../context/GamificationContext';
 import Timer from './Timer';
 import { useTimer } from '../hooks/useTimer';
 
@@ -14,6 +15,7 @@ export default function FlashcardDeck({
   timerSeconds      // seconds per question or total
 }) {
   const { reduceAnimations } = useTheme();
+  const gam = useGamification();
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   // answers map: { [index]: { type: 'correct'|'missed'|'skipped', cardWithMeta: {...} } }
@@ -84,6 +86,7 @@ export default function FlashcardDeck({
   }, [currentIndex]);
 
   const endSessionEarly = useCallback(() => {
+    if (gam) gam.syncToServer();
     const finalResults = deriveFinalResults();
     onComplete({
       ...finalResults,
@@ -91,7 +94,7 @@ export default function FlashcardDeck({
       totalTimeMs: Date.now() - sessionStartRef.current,
       questionTimes: questionStartTimes
     });
-  }, [deriveFinalResults, onComplete, timerMode, questionStartTimes]);
+  }, [deriveFinalResults, onComplete, timerMode, questionStartTimes, gam]);
 
   const handleAnswer = (type, timedOut = false) => {
     const timeSpentMs = questionStartTimes[currentIndex]
@@ -104,6 +107,18 @@ export default function FlashcardDeck({
 
     const newAnswers = { ...answers, [currentIndex]: { type, cardWithMeta } };
     setAnswers(newAnswers);
+
+    // Gamification awards per card
+    if (gam) {
+      if (type === 'correct') {
+        gam.incrementCombo();
+        gam.awardXP(10, '+10 XP');
+        gam.awardCoins(5, '+5 coins');
+      } else {
+        gam.resetCombo();
+        gam.awardXP(3, '+3 XP');
+      }
+    }
 
     // Record progress if tracking is enabled
     if (trackProgress && profileId && currentCard.id) {
@@ -118,7 +133,8 @@ export default function FlashcardDeck({
       setCurrentIndex(currentIndex + 1);
       setIsFlipped(false);
     } else {
-      // All cards answered or at the end - derive results and complete
+      // All cards answered or at the end - sync gamification and derive results
+      if (gam) gam.syncToServer();
       const finalResults = { correct: [], missed: [], skipped: [] };
       const indices = Object.keys(newAnswers).map(Number).sort((a, b) => a - b);
       for (const idx of indices) {

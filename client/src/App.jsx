@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
+import { GamificationProvider } from './context/GamificationContext';
+import RewardRenderer from './components/RewardRenderer';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -100,50 +102,53 @@ function App() {
 
   return (
     <ThemeProvider initialTheme={theme} initialFontSize={fontSize} initialReduceAnimations={reduceAnimations} initialLiteralLanguage={literalLanguage}>
-      <Router>
-        <div
-          className="min-h-screen"
-          style={{
-            background: `linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))`
-          }}
-        >
-          <Navbar profile={profile} onLogout={handleLogout} />
-          <Routes>
-            <Route
-              path="/"
-              element={<Home profile={profile} setProfile={setProfile} />}
-            />
-            <Route
-              path="/flashcards"
-              element={<Flashcards profile={profile} />}
-            />
-            <Route
-              path="/results"
-              element={<Results />}
-            />
-            <Route
-              path="/dynamic-test"
-              element={<DynamicTest profile={profile} />}
-            />
-            <Route
-              path="/smart-review"
-              element={<SmartReview profile={profile} />}
-            />
-            <Route
-              path="/dashboard"
-              element={<Dashboard profile={profile} />}
-            />
-            <Route
-              path="/family"
-              element={
-                profile?.role === 'admin' || profile?.role === 'parent'
-                  ? <FamilyDashboard profile={profile} />
-                  : <Navigate to="/" replace />
-              }
-            />
-          </Routes>
-        </div>
-      </Router>
+      <GamificationProvider profileId={profile?.id}>
+        <Router>
+          <div
+            className="min-h-screen"
+            style={{
+              background: `linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))`
+            }}
+          >
+            <Navbar profile={profile} onLogout={handleLogout} />
+            <RewardRenderer />
+            <Routes>
+              <Route
+                path="/"
+                element={<Home profile={profile} setProfile={setProfile} />}
+              />
+              <Route
+                path="/flashcards"
+                element={<Flashcards profile={profile} />}
+              />
+              <Route
+                path="/results"
+                element={<Results />}
+              />
+              <Route
+                path="/dynamic-test"
+                element={<DynamicTest profile={profile} />}
+              />
+              <Route
+                path="/smart-review"
+                element={<SmartReview profile={profile} />}
+              />
+              <Route
+                path="/dashboard"
+                element={<Dashboard profile={profile} />}
+              />
+              <Route
+                path="/family"
+                element={
+                  profile?.role === 'admin' || profile?.role === 'parent'
+                    ? <FamilyDashboard profile={profile} />
+                    : <Navigate to="/" replace />
+                }
+              />
+            </Routes>
+          </div>
+        </Router>
+      </GamificationProvider>
     </ThemeProvider>
   );
 }

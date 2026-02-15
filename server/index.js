@@ -9,6 +9,7 @@ import authRoutes from './routes/auth.js';
 import questionRoutes from './routes/questions.js';
 import claudeRoutes from './routes/claude.js';
 import progressRoutes from './routes/progress.js';
+import gamificationRoutes from './routes/gamification.js';
 import { authenticate } from './middleware/auth.js';
 import errorHandler from './middleware/errorHandler.js';
 import { evictStaleCache } from './dal/cache.js';
@@ -45,6 +46,7 @@ app.use('/api', authenticate);
 app.use('/api', questionRoutes);
 app.use('/api', claudeRoutes);
 app.use('/api', progressRoutes);
+app.use('/api/gamification', gamificationRoutes);
 
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static(path.join(__dirname, '../client/dist')));

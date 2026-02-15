@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { apiFetch } from '../utils/api';
+import { useGamification } from '../context/GamificationContext';
 
 export default function TestQuestion({
   question,
@@ -9,6 +10,7 @@ export default function TestQuestion({
   literalLanguage,
   onAnswerSubmit
 }) {
+  const gam = useGamification();
   const [selectedOption, setSelectedOption] = useState(null);
   const [freeTextAnswer, setFreeTextAnswer] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -16,18 +18,36 @@ export default function TestQuestion({
   const [markingResult, setMarkingResult] = useState(null);
   const [error, setError] = useState(null);
 
+  const awardForScore = (score) => {
+    if (!gam) return;
+    if (score >= 70) {
+      gam.awardXP(15);
+      gam.awardCoins(8);
+      gam.incrementCombo();
+    } else if (score >= 40) {
+      gam.awardXP(8);
+      gam.awardCoins(3);
+      gam.resetCombo();
+    } else {
+      gam.awardXP(3);
+      gam.resetCombo();
+    }
+  };
+
   const handleSubmitMultipleChoice = () => {
     if (!selectedOption) return;
-    
+
     const isCorrect = selectedOption === question.correctOption;
+    const score = isCorrect ? 100 : 0;
     setSubmitted(true);
-    
+    awardForScore(score);
+
     onAnswerSubmit({
       questionId: question.id,
       format: 'multiple_choice',
       studentAnswer: selectedOption,
       isCorrect,
-      score: isCorrect ? 100 : 0
+      score
     });
   };
 
@@ -57,7 +77,8 @@ export default function TestQuestion({
 
       setMarkingResult(data);
       setSubmitted(true);
-      
+      awardForScore(data.score);
+
       onAnswerSubmit({
         questionId: question.id,
         format: 'free_text',

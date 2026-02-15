@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { apiFetch } from '../utils/api';
+import { useGamification } from '../context/GamificationContext';
 import StudyReport from './StudyReport';
 
 export default function TestResults({
@@ -11,6 +12,7 @@ export default function TestResults({
   onNewTest,
   onSaveToBank
 }) {
+  const gam = useGamification();
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState(null);
@@ -125,6 +127,19 @@ export default function TestResults({
             <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Need Review (&lt;40%)</div>
           </div>
         </div>
+
+        {gam && (
+          <div className="rounded-lg p-4 mb-6 flex items-center justify-center space-x-6" style={{ backgroundColor: 'var(--bg-input)' }}>
+            <div className="flex items-center space-x-2">
+              <span className="text-purple-400 font-bold">Lv{gam.level}</span>
+              <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>({gam.xp} XP)</span>
+            </div>
+            <div className="flex items-center space-x-1">
+              <span>&#x1FA99;</span>
+              <span className="font-bold text-amber-400">{gam.coins} coins</span>
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4">
           <h3 className="text-xl font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Question Breakdown</h3>

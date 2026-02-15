@@ -2,6 +2,7 @@ import express from 'express';
 import {
   getProgress, recordCardReview, getDueCards, getDetailedStats
 } from '../dal/progress.js';
+import { awardXP, awardCoins, checkAndUnlockAchievements } from '../dal/gamification.js';
 import { canAccessProfile } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -33,7 +34,18 @@ router.put('/progress/:profileId/card/:cardId', (req, res, next) => {
     }
 
     const { card, stats } = recordCardReview(profileId, cardId, result);
-    res.json({ success: true, card, stats });
+
+    // Gamification: award XP/coins per card review
+    const xpAmount = result === 'correct' ? 10 : 3;
+    const coinAmount = result === 'correct' ? 5 : 0;
+    const xpResult = awardXP(profileId, xpAmount);
+    let coinsResult = null;
+    if (coinAmount > 0) {
+      coinsResult = awardCoins(profileId, coinAmount, 'card-review');
+    }
+    const newAchievements = checkAndUnlockAchievements(profileId);
+
+    res.json({ success: true, card, stats, gamification: { xp: xpResult, coins: coinsResult, newAchievements } });
   } catch (error) {
     next(error);
   }

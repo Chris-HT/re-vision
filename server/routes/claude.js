@@ -7,6 +7,7 @@ import {
   getLearningProfile, updateLearningProfile
 } from '../dal/reports.js';
 import { canAccessProfile } from '../middleware/auth.js';
+import { awardXP, awardCoins, checkAndUnlockAchievements } from '../dal/gamification.js';
 
 const router = express.Router();
 
@@ -515,7 +516,12 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
     // Update learning profile
     updateLearningProfile(profileId, reportData, topic);
 
-    res.json({ success: true, report: reportData, sessionId });
+    // Gamification: award test completion bonus
+    const xpResult = awardXP(profileId, 50);
+    awardCoins(profileId, 20, 'test-completion');
+    const newAchievements = checkAndUnlockAchievements(profileId);
+
+    res.json({ success: true, report: reportData, sessionId, gamification: { xp: xpResult, newAchievements } });
   } catch (error) {
     console.error('Report generation error:', error);
     res.status(500).json({
