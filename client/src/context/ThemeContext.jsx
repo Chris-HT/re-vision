@@ -7,12 +7,14 @@ export function ThemeProvider({
   initialTheme = 'dark',
   initialFontSize = 'medium',
   initialReduceAnimations = false,
-  initialLiteralLanguage = false
+  initialLiteralLanguage = false,
+  initialFocusMode = false
 }) {
   const [theme, setTheme] = useState(initialTheme);
   const [fontSize, setFontSize] = useState(initialFontSize);
   const [reduceAnimations, setReduceAnimations] = useState(initialReduceAnimations);
   const [literalLanguage, setLiteralLanguage] = useState(initialLiteralLanguage);
+  const [focusMode, setFocusMode] = useState(initialFocusMode);
 
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
@@ -26,12 +28,17 @@ export function ThemeProvider({
     document.documentElement.setAttribute('data-reduce-animations', String(reduceAnimations));
   }, [reduceAnimations]);
 
+  useEffect(() => {
+    document.documentElement.setAttribute('data-focus-mode', String(focusMode));
+  }, [focusMode]);
+
   return (
     <ThemeContext.Provider value={{
       theme, setTheme,
       fontSize, setFontSize,
       reduceAnimations, setReduceAnimations,
-      literalLanguage, setLiteralLanguage
+      literalLanguage, setLiteralLanguage,
+      focusMode, setFocusMode
     }}>
       {children}
     </ThemeContext.Provider>
@@ -45,7 +52,8 @@ export function useTheme() {
       theme: 'dark', setTheme: () => {},
       fontSize: 'medium', setFontSize: () => {},
       reduceAnimations: false, setReduceAnimations: () => {},
-      literalLanguage: false, setLiteralLanguage: () => {}
+      literalLanguage: false, setLiteralLanguage: () => {},
+      focusMode: false, setFocusMode: () => {}
     };
   }
   return context;

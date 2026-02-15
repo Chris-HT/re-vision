@@ -34,7 +34,10 @@ export function updateProfile(profileId, updates) {
     icon: 'icon',
     fontSize: 'font_size',
     reduceAnimations: 'reduce_animations',
-    literalLanguage: 'literal_language'
+    literalLanguage: 'literal_language',
+    focusMode: 'focus_mode',
+    breakInterval: 'break_interval',
+    sessionPreset: 'session_preset'
   };
 
   const sets = [];
@@ -70,6 +73,9 @@ function toProfile(row) {
     favourites: row.favourites ? JSON.parse(row.favourites) : [],
     fontSize: row.font_size || 'medium',
     reduceAnimations: !!row.reduce_animations,
-    literalLanguage: !!row.literal_language
+    literalLanguage: !!row.literal_language,
+    focusMode: !!row.focus_mode,
+    breakInterval: row.break_interval ?? 15,
+    sessionPreset: row.session_preset || 'standard'
   };
 }

@@ -6,10 +6,13 @@ import FlashcardDeck from '../components/FlashcardDeck';
 import ResultsScreen from '../components/ResultsScreen';
 import FlashcardGenerationWizard from '../components/FlashcardGenerationWizard';
 import { useQuestions } from '../hooks/useQuestions';
+import { useStudyTimer } from '../context/StudyTimerContext';
+import SessionPreview from '../components/SessionPreview';
 
 export default function Flashcards({ profile }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const studyTimer = useStudyTimer();
   const [subjects, setSubjects] = useState([]);
   const [config, setConfig] = useState({});
   const [sessionQuestions, setSessionQuestions] = useState(null);
@@ -18,8 +21,29 @@ export default function Flashcards({ profile }) {
   const [timerMode, setTimerMode] = useState('off');
   const [timerSeconds, setTimerSeconds] = useState(60);
   const [showGenerationWizard, setShowGenerationWizard] = useState(false);
+  const [showPreview, setShowPreview] = useState(false);
+  const [pendingQuestions, setPendingQuestions] = useState(null);
+  const [maxCards, setMaxCards] = useState(null);
+  const [activePreset, setActivePreset] = useState(profile?.sessionPreset || 'standard');
+
+  const sessionPresets = {
+    primary: { quick: 5, standard: 8, extended: 12 },
+    secondary: { quick: 8, standard: 10, extended: 15 },
+    adult: { quick: 10, standard: 15, extended: 20 }
+  };
+  const presets = sessionPresets[profile?.ageGroup || 'adult'] || sessionPresets.adult;
 
   const practiceCardIds = location.state?.practiceCardIds;
+
+  // Start/stop study timer based on session state
+  useEffect(() => {
+    if (sessionQuestions && !showResults && studyTimer) {
+      studyTimer.startStudying();
+    } else if (studyTimer) {
+      studyTimer.stopStudying();
+    }
+    return () => { if (studyTimer) studyTimer.stopStudying(); };
+  }, [!!sessionQuestions, showResults]);
 
   const { questions, categories, loading, error } = useQuestions(
     config.subject,
@@ -87,8 +111,16 @@ export default function Flashcards({ profile }) {
     }
 
     const shuffled = filtered.sort(() => Math.random() - 0.5);
+    const limited = maxCards ? shuffled.slice(0, maxCards) : shuffled;
 
-    setSessionQuestions(shuffled);
+    setPendingQuestions(limited);
+    setShowPreview(true);
+  };
+
+  const handleConfirmStart = () => {
+    setSessionQuestions(pendingQuestions);
+    setPendingQuestions(null);
+    setShowPreview(false);
     setShowResults(false);
   };
 
@@ -129,6 +161,25 @@ export default function Flashcards({ profile }) {
           onReviewMissed={handleReviewMissed}
           profile={profile}
         />
+      </div>
+    );
+  }
+
+  if (showPreview && pendingQuestions) {
+    const subjectName = subjects.find(s => s.id === config.subject)?.name || 'selected topic';
+    return (
+      <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
+        <div className="container mx-auto px-4">
+          <SessionPreview
+            questionCount={pendingQuestions.length}
+            format="flashcard"
+            topic={subjectName}
+            estimatedMinutes={Math.round(pendingQuestions.length * 0.5)}
+            nextStep="After this: You'll see your results with correct, missed, and skipped cards"
+            onStart={handleConfirmStart}
+            onBack={() => { setShowPreview(false); setPendingQuestions(null); }}
+          />
+        </div>
       </div>
     );
   }
@@ -211,6 +262,47 @@ export default function Flashcards({ profile }) {
                             {questions.filter(q => config.categories.includes(q.category)).length}
                           </span>
                         </div>
+                      )}
+                    </div>
+
+                    {/* Session Size Presets */}
+                    <div className="mb-6 border-t pt-4" style={{ borderColor: 'var(--border-color)' }}>
+                      <h4 className="text-sm font-medium mb-3" style={{ color: 'var(--text-primary)' }}>Session Size</h4>
+                      <div className="flex gap-2">
+                        {Object.entries(presets).map(([key, count]) => (
+                          <button
+                            key={key}
+                            onClick={() => {
+                              setActivePreset(key);
+                              setMaxCards(count);
+                            }}
+                            className={`flex-1 py-2 rounded-md text-xs font-medium transition-colors ${
+                              activePreset === key ? 'bg-blue-600 text-white' : ''
+                            }`}
+                            style={activePreset !== key ? { backgroundColor: 'var(--bg-input)', color: 'var(--text-secondary)' } : undefined}
+                          >
+                            <span className="capitalize block">{key}</span>
+                            <span className="opacity-75">{count} cards</span>
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => {
+                            setActivePreset(null);
+                            setMaxCards(null);
+                          }}
+                          className={`flex-1 py-2 rounded-md text-xs font-medium transition-colors ${
+                            activePreset === null ? 'bg-blue-600 text-white' : ''
+                          }`}
+                          style={activePreset !== null ? { backgroundColor: 'var(--bg-input)', color: 'var(--text-secondary)' } : undefined}
+                        >
+                          <span className="block">All</span>
+                          <span className="opacity-75">{questions.length}</span>
+                        </button>
+                      </div>
+                      {maxCards && (
+                        <p className="text-xs mt-2" style={{ color: 'var(--text-secondary)' }}>
+                          ~{Math.round(maxCards * 0.5)} min session
+                        </p>
                       )}
                     </div>
 

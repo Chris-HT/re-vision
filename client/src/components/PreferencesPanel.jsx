@@ -2,12 +2,15 @@ import { useState, useRef, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
 
-export default function PreferencesPanel({ profileId }) {
+export default function PreferencesPanel({ profileId, profile }) {
   const {
     fontSize, setFontSize,
     reduceAnimations, setReduceAnimations,
-    literalLanguage, setLiteralLanguage
+    literalLanguage, setLiteralLanguage,
+    focusMode, setFocusMode
   } = useTheme();
+  const [breakInterval, setBreakInterval] = useState(profile?.breakInterval ?? 15);
+  const [sessionPreset, setSessionPreset] = useState(profile?.sessionPreset || 'standard');
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef(null);
 
@@ -44,6 +47,22 @@ export default function PreferencesPanel({ profileId }) {
     const next = !literalLanguage;
     setLiteralLanguage(next);
     persist({ literalLanguage: next ? 1 : 0 });
+  };
+
+  const handleFocusMode = () => {
+    const next = !focusMode;
+    setFocusMode(next);
+    persist({ focusMode: next ? 1 : 0 });
+  };
+
+  const handleBreakInterval = (value) => {
+    setBreakInterval(value);
+    persist({ breakInterval: value });
+  };
+
+  const handleSessionPreset = (value) => {
+    setSessionPreset(value);
+    persist({ sessionPreset: value });
   };
 
   const fontSizes = [
@@ -146,6 +165,83 @@ export default function PreferencesPanel({ profileId }) {
             <p className="text-xs mt-1 px-1" style={{ color: 'var(--text-muted)' }}>
               AI feedback uses plain language only
             </p>
+          </div>
+
+          {/* Focus mode */}
+          <div>
+            <button
+              onClick={handleFocusMode}
+              className="w-full flex items-center justify-between py-2 px-3 rounded-md transition-colors"
+              style={{ backgroundColor: 'var(--bg-input)' }}
+            >
+              <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                Focus mode
+              </span>
+              <span className={`w-9 h-5 rounded-full relative transition-colors ${
+                focusMode ? 'bg-blue-600' : 'bg-slate-500'
+              }`}>
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                  focusMode ? 'left-[18px]' : 'left-0.5'
+                }`} />
+              </span>
+            </button>
+            <p className="text-xs mt-1 px-1" style={{ color: 'var(--text-muted)' }}>
+              Hides navigation and decorations during study
+            </p>
+          </div>
+
+          {/* Break reminders */}
+          <div>
+            <label className="text-xs font-medium block mb-2" style={{ color: 'var(--text-secondary)' }}>
+              Break reminders
+            </label>
+            <div className="flex gap-1.5">
+              {[
+                { value: 0, label: 'Off' },
+                { value: 10, label: '10m' },
+                { value: 15, label: '15m' },
+                { value: 20, label: '20m' },
+                { value: 25, label: '25m' }
+              ].map(opt => (
+                <button
+                  key={opt.value}
+                  onClick={() => handleBreakInterval(opt.value)}
+                  className={`flex-1 py-1.5 rounded-md text-xs font-medium transition-colors ${
+                    breakInterval === opt.value ? 'bg-blue-600 text-white' : ''
+                  }`}
+                  style={breakInterval !== opt.value ? {
+                    backgroundColor: 'var(--bg-input)',
+                    color: 'var(--text-secondary)'
+                  } : undefined}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Default session size */}
+          <div>
+            <label className="text-xs font-medium block mb-2" style={{ color: 'var(--text-secondary)' }}>
+              Default session size
+            </label>
+            <div className="flex gap-2">
+              {['quick', 'standard', 'extended'].map(preset => (
+                <button
+                  key={preset}
+                  onClick={() => handleSessionPreset(preset)}
+                  className={`flex-1 py-1.5 rounded-md text-xs font-medium capitalize transition-colors ${
+                    sessionPreset === preset ? 'bg-blue-600 text-white' : ''
+                  }`}
+                  style={sessionPreset !== preset ? {
+                    backgroundColor: 'var(--bg-input)',
+                    color: 'var(--text-secondary)'
+                  } : undefined}
+                >
+                  {preset}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

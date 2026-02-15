@@ -117,6 +117,7 @@ All data is stored in SQLite (`data/revision.db`) with these tables:
 - **profile_xp** + **subject_xp** + **profile_coins** + **coin_transactions** (gamification XP/coins)
 - **achievements** + **profile_achievements** (achievement definitions and per-user unlocks)
 - **profile_tokens** + **token_transactions** + **token_test_history** (family token system)
+- **weekly_streaks** (forgiving weekly streak tracking — 4-of-7 days)
 
 The DAL layer (`server/dal/`) provides functions that return JSON shapes matching the original API responses, so the frontend requires zero changes.
 
@@ -141,6 +142,8 @@ See `server/db/schema.sql` for full schema. Key tables:
 - `profile_tokens`: profile_id (PK), tokens, daily_earned, daily_reset_date, token_rate (default 0.10)
 - `token_transactions`: id, profile_id, amount, reason, session_id, created_at
 - `token_test_history`: profile_id + test_key (PK), times_completed, best_score
+- `weekly_streaks`: profile_id (PK), current_weekly_streak, longest_weekly_streak, week_study_days (JSON), last_week_completed, streak_freezes
+- `profiles` (engagement columns added via ALTER): focus_mode, break_interval, session_preset
 
 ### Migration
 
@@ -179,6 +182,7 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
 - `POST /api/progress/:profileId/record` - Record a card review session
 - `GET /api/progress/:profileId/due` - Get cards due for review (spaced repetition)
 - `GET /api/progress/:profileId/stats` - Get learning statistics and analytics
+- `GET /api/progress/:profileId/weekly-streak` - Get weekly streak data (currentWeeklyStreak, daysStudiedThisWeek, etc.)
 
 ### Gamification API (`server/routes/gamification.js`) — authenticated
 - `GET /api/gamification/:profileId` - Returns XP, level, coins, achievement counts. Uses `canAccessProfile`.
@@ -198,9 +202,11 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
 - `additionalContext` (including learning profile weak areas) is intentionally excluded from the cache key
 
 ### Dynamic Test Flow
-- User configures test (topic, difficulty, format, count) via `TestConfig`
+- User configures test (topic, difficulty, format, count) via `TestConfig` with session size presets (Quick/Standard/Extended)
 - `TestConfig` fetches the user's learning profile and appends weak areas to `additionalContext` for context-aware generation
+- After generation, a `SessionPreview` card shows question count, format, time estimate, and "Start" / "Change Settings" buttons
 - During the test, each question shows feedback after submission (correct/incorrect highlights, marking results); user must click "Next Question" to advance (no auto-advance)
+- Transition warnings: "2 questions left" near the end, "Last question — you'll see your results next" on the final question
 - A "Quit Test" button is available during testing with a confirmation dialog
 - On the last question, button reads "See Results"
 - Results screen shows score breakdown and a "Generate Study Report" button (button-triggered to conserve API calls)
@@ -361,13 +367,23 @@ Comprehensive review addressing 24 issues across security, bugs, performance, an
 - **Server hook**: `POST /api/report` calculates and awards tokens alongside gamification XP/coins, returns `tokenReward` in response
 - **Database**: `profile_tokens` (balance, daily counter, rate), `token_transactions` (log), `token_test_history` (repeat tracking)
 
+### Phase 7d (Complete)
+- **Weekly streaks**: Forgiving weekly streak tracker alongside daily streaks — study 4 of 7 days to maintain a weekly streak
+- **Break reminders**: Cumulative study timer via `StudyTimerContext`; gentle break banner after configurable interval (10/15/20/25 min or off); 3-min break countdown timer; persists across page navigation within session
+- **Session size presets**: Age-appropriate Quick/Standard/Extended presets in both Dynamic Test and Flashcards (primary: 5/8/12, secondary: 8/10/15, adult: 10/15/20) with time estimates; default preset configurable in preferences
+- **Session preview**: `SessionPreview` component shown before starting any study session (DynamicTest, Flashcards, SmartReview); shows question count, format, estimated time, and what comes next; Start/Change Settings buttons
+- **Focus mode**: Toggle in preferences; hides navbar, shows minimal "Exit Focus Mode" button; suppresses XP/coins reward popups (keeps level-up and achievements); persists via `focusMode` profile column; managed through `ThemeContext` with `data-focus-mode` attribute
+- **Transition warnings**: Contextual "what's next" messaging — "2 questions left" and "Last question — you'll see your results next" in TestQuestion; "3 cards left" and "Last card" in FlashcardDeck; "2 minutes left" and "30 seconds remaining" time labels in Timer
+- **New preferences**: Break interval, session preset, and focus mode added to `PreferencesPanel` and persisted to profile
+- **Database**: `weekly_streaks` table + 3 new profile columns (`focus_mode`, `break_interval`, `session_preset`)
+
 ## Important Conventions
 
 ### File Organization
 - **Components**: Reusable UI elements
   - Core: `FlashcardDeck`, `ConfigPanel`, `Navbar`, `PinInput`
   - Dashboard: `StatsCards`, `AccuracyChart`, `CategoryStrength`, `WeakestCards`, `Heatmap`, `TestReports`, `Achievements`
-  - Features: `ExportPDF`, `ImportExport`, `Timer`, `ThemeSwitcher`, `ColorPresets`, `StudyReport`, `XPBar`, `CoinCounter`, `TokenCounter`
+  - Features: `ExportPDF`, `ImportExport`, `Timer`, `ThemeSwitcher`, `ColorPresets`, `StudyReport`, `XPBar`, `CoinCounter`, `TokenCounter`, `BreakReminder`, `SessionPreview`, `FocusModeToggle`
   - Gamification: `RewardPopup`, `LevelUpModal`, `AchievementToast`, `RewardRenderer`
   - Wizards: `FlashcardGenerationWizard`, `TestConfig`, `TestQuestion`, `TestResults`
 - **Pages**: Route-level components
@@ -377,15 +393,16 @@ Comprehensive review addressing 24 issues across security, bugs, performance, an
   - `useProgress` - Track learning progress
   - `useTimer` - Exam timer functionality
 - **Context**: React context providers
-  - `ThemeContext` - Theme switching (dark/light/high contrast)
+  - `ThemeContext` - Theme switching (dark/light/high contrast), focus mode
   - `GamificationContext` - XP, level, coins, combo, reward queue, server sync
+  - `StudyTimerContext` - Cumulative study time tracking, break reminder state
 - **Utils**: Frontend utilities
   - `api.js` - Authenticated fetch wrapper (`apiFetch`)
 - **Routes**: Express route handlers (thin controllers)
   - `auth.js` - Authentication (login, PIN setup, token validation, children)
   - `questions.js` - Question bank operations
   - `claude.js` - AI generation, marking, study reports, and learning profiles
-  - `progress.js` - Progress tracking and spaced repetition
+  - `progress.js` - Progress tracking, spaced repetition, weekly streaks
   - `gamification.js` - XP, coins, achievements endpoints
 - **DAL**: Data access layer (all DB operations)
   - `auth.js` - Login profiles, PIN management, parent-child queries

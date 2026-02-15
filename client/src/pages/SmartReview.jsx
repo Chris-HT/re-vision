@@ -3,10 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../utils/api';
 import { useProgress } from '../hooks/useProgress';
 import FlashcardDeck from '../components/FlashcardDeck';
+import SessionPreview from '../components/SessionPreview';
+import { useStudyTimer } from '../context/StudyTimerContext';
 
 export default function SmartReview({ profile }) {
   const navigate = useNavigate();
   const { stats, dueInfo, loading, fetchDue, recordAnswer } = useProgress(profile?.id);
+  const studyTimer = useStudyTimer();
   const [allQuestions, setAllQuestions] = useState([]);
   const [sessionQuestions, setSessionQuestions] = useState(null);
   const [categories, setCategories] = useState({});
@@ -14,6 +17,18 @@ export default function SmartReview({ profile }) {
   const [sessionResults, setSessionResults] = useState(null);
   const [allCaughtUp, setAllCaughtUp] = useState(false);
   const [studyMode, setStudyMode] = useState(null); // 'due' | 'unseen' | 'extra'
+  const [showPreview, setShowPreview] = useState(false);
+  const [pendingQuestions, setPendingQuestions] = useState(null);
+
+  // Start/stop study timer based on session state
+  useEffect(() => {
+    if (sessionQuestions && !showResults && studyTimer) {
+      studyTimer.startStudying();
+    } else if (studyTimer) {
+      studyTimer.stopStudying();
+    }
+    return () => { if (studyTimer) studyTimer.stopStudying(); };
+  }, [!!sessionQuestions, showResults]);
 
   useEffect(() => {
     if (!profile) {
@@ -52,6 +67,13 @@ export default function SmartReview({ profile }) {
     }
   };
 
+  const confirmPreview = useCallback(() => {
+    setSessionQuestions(pendingQuestions);
+    setPendingQuestions(null);
+    setShowPreview(false);
+    setShowResults(false);
+  }, [pendingQuestions]);
+
   const startDueReview = useCallback(() => {
     if (!dueInfo || !allQuestions.length) return;
 
@@ -72,8 +94,8 @@ export default function SmartReview({ profile }) {
     }
 
     setStudyMode('due');
-    setSessionQuestions(cards);
-    setShowResults(false);
+    setPendingQuestions(cards);
+    setShowPreview(true);
     setAllCaughtUp(false);
   }, [dueInfo, allQuestions]);
 
@@ -88,8 +110,8 @@ export default function SmartReview({ profile }) {
     if (cards.length === 0) return;
 
     setStudyMode('unseen');
-    setSessionQuestions(cards);
-    setShowResults(false);
+    setPendingQuestions(cards);
+    setShowPreview(true);
     setAllCaughtUp(false);
   }, [dueInfo, allQuestions]);
 
@@ -97,8 +119,8 @@ export default function SmartReview({ profile }) {
     // Shuffle all questions for extra practice
     const shuffled = [...allQuestions].sort(() => Math.random() - 0.5).slice(0, 20);
     setStudyMode('extra');
-    setSessionQuestions(shuffled);
-    setShowResults(false);
+    setPendingQuestions(shuffled);
+    setShowPreview(true);
     setAllCaughtUp(false);
   }, [allQuestions]);
 
@@ -188,6 +210,26 @@ export default function SmartReview({ profile }) {
               </button>
             )}
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Session preview
+  if (showPreview && pendingQuestions) {
+    const modeLabel = studyMode === 'due' ? 'due + new cards' : studyMode === 'unseen' ? 'new cards' : 'practice cards';
+    return (
+      <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
+        <div className="container mx-auto px-4">
+          <SessionPreview
+            questionCount={pendingQuestions.length}
+            format="flashcard"
+            topic={`Smart Review (${modeLabel})`}
+            estimatedMinutes={Math.round(pendingQuestions.length * 0.5)}
+            nextStep="After this: You'll see your score and can review missed cards"
+            onStart={confirmPreview}
+            onBack={() => { setShowPreview(false); setPendingQuestions(null); }}
+          />
         </div>
       </div>
     );

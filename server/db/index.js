@@ -31,7 +31,10 @@ const alterStatements = [
   "ALTER TABLE profiles ADD COLUMN role TEXT NOT NULL DEFAULT 'child'",
   "ALTER TABLE profiles ADD COLUMN font_size TEXT DEFAULT 'medium'",
   'ALTER TABLE profiles ADD COLUMN reduce_animations INTEGER DEFAULT 0',
-  'ALTER TABLE profiles ADD COLUMN literal_language INTEGER DEFAULT 0'
+  'ALTER TABLE profiles ADD COLUMN literal_language INTEGER DEFAULT 0',
+  'ALTER TABLE profiles ADD COLUMN focus_mode INTEGER DEFAULT 0',
+  'ALTER TABLE profiles ADD COLUMN break_interval INTEGER DEFAULT 15',
+  "ALTER TABLE profiles ADD COLUMN session_preset TEXT DEFAULT 'standard'"
 ];
 for (const sql of alterStatements) {
   try { db.exec(sql); } catch (e) {
@@ -102,6 +105,18 @@ db.exec(`
     times_completed INTEGER DEFAULT 0,
     best_score INTEGER DEFAULT 0,
     PRIMARY KEY(profile_id, test_key)
+  );
+`);
+
+// Weekly streaks table
+db.exec(`
+  CREATE TABLE IF NOT EXISTS weekly_streaks (
+    profile_id TEXT PRIMARY KEY,
+    current_weekly_streak INTEGER DEFAULT 0,
+    longest_weekly_streak INTEGER DEFAULT 0,
+    week_study_days TEXT,
+    last_week_completed TEXT,
+    streak_freezes INTEGER DEFAULT 0
   );
 `);
 

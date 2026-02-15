@@ -233,6 +233,18 @@ export default function FlashcardDeck({
           />
         </div>
 
+        {/* Transition warnings */}
+        {questions.length - currentIndex === 1 && (
+          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+            Last card — you'll see your results next
+          </p>
+        )}
+        {questions.length - currentIndex === 3 && (
+          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+            3 cards left in this session
+          </p>
+        )}
+
         {/* Live score counter */}
         {totalAnswered > 0 && (
           <div className="flex items-center space-x-4 mt-2">

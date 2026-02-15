@@ -1,6 +1,6 @@
 import express from 'express';
 import {
-  getProgress, recordCardReview, getDueCards, getDetailedStats
+  getProgress, recordCardReview, getDueCards, getDetailedStats, getWeeklyStreak
 } from '../dal/progress.js';
 import { awardXP, awardCoins, checkAndUnlockAchievements } from '../dal/gamification.js';
 import { canAccessProfile } from '../middleware/auth.js';
@@ -78,6 +78,20 @@ router.get('/progress/:profileId/stats', (req, res, next) => {
     }
     const stats = getDetailedStats(profileId);
     res.json(stats);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/progress/:profileId/weekly-streak
+router.get('/progress/:profileId/weekly-streak', (req, res, next) => {
+  try {
+    const { profileId } = req.params;
+    if (!canAccessProfile(req.user, profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const streak = getWeeklyStreak(profileId);
+    res.json(streak);
   } catch (error) {
     next(error);
   }

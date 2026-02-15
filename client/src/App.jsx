@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
-import { ThemeProvider } from './context/ThemeContext';
+import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { GamificationProvider } from './context/GamificationContext';
+import { StudyTimerProvider } from './context/StudyTimerContext';
 import RewardRenderer from './components/RewardRenderer';
+import BreakReminder from './components/BreakReminder';
+import FocusModeToggle from './components/FocusModeToggle';
 import Navbar from './components/Navbar';
 import Login from './pages/Login';
 import Home from './pages/Home';
@@ -20,6 +23,8 @@ function App() {
   const [fontSize, setFontSize] = useState('medium');
   const [reduceAnimations, setReduceAnimations] = useState(false);
   const [literalLanguage, setLiteralLanguage] = useState(false);
+  const [focusMode, setFocusMode] = useState(false);
+  const [breakInterval, setBreakInterval] = useState(15);
   const [loading, setLoading] = useState(true);
 
   // On mount, restore session from localStorage
@@ -55,6 +60,8 @@ function App() {
     if (profile?.fontSize) setFontSize(profile.fontSize);
     if (profile?.reduceAnimations !== undefined) setReduceAnimations(profile.reduceAnimations);
     if (profile?.literalLanguage !== undefined) setLiteralLanguage(profile.literalLanguage);
+    if (profile?.focusMode !== undefined) setFocusMode(profile.focusMode);
+    if (profile?.breakInterval !== undefined) setBreakInterval(profile.breakInterval);
   }, [profile]);
 
   const handleLogin = (newToken, newProfile) => {
@@ -101,55 +108,67 @@ function App() {
   }
 
   return (
-    <ThemeProvider initialTheme={theme} initialFontSize={fontSize} initialReduceAnimations={reduceAnimations} initialLiteralLanguage={literalLanguage}>
+    <ThemeProvider initialTheme={theme} initialFontSize={fontSize} initialReduceAnimations={reduceAnimations} initialLiteralLanguage={literalLanguage} initialFocusMode={focusMode}>
       <GamificationProvider profileId={profile?.id}>
-        <Router>
-          <div
-            className="min-h-screen"
-            style={{
-              background: `linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))`
-            }}
-          >
-            <Navbar profile={profile} onLogout={handleLogout} />
-            <RewardRenderer />
-            <Routes>
-              <Route
-                path="/"
-                element={<Home profile={profile} setProfile={setProfile} />}
-              />
-              <Route
-                path="/flashcards"
-                element={<Flashcards profile={profile} />}
-              />
-              <Route
-                path="/results"
-                element={<Results />}
-              />
-              <Route
-                path="/dynamic-test"
-                element={<DynamicTest profile={profile} />}
-              />
-              <Route
-                path="/smart-review"
-                element={<SmartReview profile={profile} />}
-              />
-              <Route
-                path="/dashboard"
-                element={<Dashboard profile={profile} />}
-              />
-              <Route
-                path="/family"
-                element={
-                  profile?.role === 'admin' || profile?.role === 'parent'
-                    ? <FamilyDashboard profile={profile} />
-                    : <Navigate to="/" replace />
-                }
-              />
-            </Routes>
-          </div>
-        </Router>
+        <StudyTimerProvider breakInterval={breakInterval}>
+          <AppContent profile={profile} onLogout={handleLogout} setProfile={setProfile} />
+        </StudyTimerProvider>
       </GamificationProvider>
     </ThemeProvider>
+  );
+}
+
+function AppContent({ profile, onLogout, setProfile }) {
+  const { focusMode } = useTheme();
+
+  return (
+    <Router>
+      <div
+        className="min-h-screen"
+        style={{
+          background: `linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))`
+        }}
+      >
+        {!focusMode && <Navbar profile={profile} onLogout={onLogout} />}
+        {focusMode && <FocusModeToggle profileId={profile?.id} />}
+        <BreakReminder />
+        <RewardRenderer />
+        <Routes>
+          <Route
+            path="/"
+            element={<Home profile={profile} setProfile={setProfile} />}
+          />
+          <Route
+            path="/flashcards"
+            element={<Flashcards profile={profile} />}
+          />
+          <Route
+            path="/results"
+            element={<Results />}
+          />
+          <Route
+            path="/dynamic-test"
+            element={<DynamicTest profile={profile} />}
+          />
+          <Route
+            path="/smart-review"
+            element={<SmartReview profile={profile} />}
+          />
+          <Route
+            path="/dashboard"
+            element={<Dashboard profile={profile} />}
+          />
+          <Route
+            path="/family"
+            element={
+              profile?.role === 'admin' || profile?.role === 'parent'
+                ? <FamilyDashboard profile={profile} />
+                : <Navigate to="/" replace />
+            }
+          />
+        </Routes>
+      </div>
+    </Router>
   );
 }
 

@@ -123,6 +123,9 @@ export const recordCardReview = db.transaction((profileId, cardId, result) => {
     stats.currentStreak, stats.longestStreak,
     stats.lastSessionDate, profileId);
 
+  // Update weekly streak tracking
+  updateWeeklyStreak(profileId);
+
   return { card, stats };
 });
 
@@ -306,6 +309,114 @@ function getStats(profileId) {
     currentStreak: row.current_streak,
     longestStreak: row.longest_streak,
     lastSessionDate: row.last_session_date
+  };
+}
+
+/**
+ * Get ISO week string (e.g. "2026-W07") and day of week (1=Mon..7=Sun).
+ */
+function getISOWeekInfo(date = new Date()) {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const dayNum = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - dayNum);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  const weekNo = Math.ceil(((d - yearStart) / 86400000 + 1) / 7);
+  return {
+    weekStr: `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`,
+    dayOfWeek: dayNum
+  };
+}
+
+/**
+ * Parse a week string like "2026-W07" into a comparable number (year * 100 + week).
+ */
+function weekToNum(weekStr) {
+  if (!weekStr) return 0;
+  const [y, w] = weekStr.split('-W').map(Number);
+  return y * 100 + w;
+}
+
+/**
+ * Update weekly streak for a profile. Called during card review.
+ */
+export function updateWeeklyStreak(profileId) {
+  const { weekStr, dayOfWeek } = getISOWeekInfo();
+
+  db.prepare(
+    `INSERT OR IGNORE INTO weekly_streaks (profile_id, week_study_days, last_week_completed)
+     VALUES (?, '{}', NULL)`
+  ).run(profileId);
+
+  const row = db.prepare('SELECT * FROM weekly_streaks WHERE profile_id = ?').get(profileId);
+  let studyDays = {};
+  try { studyDays = JSON.parse(row.week_study_days || '{}'); } catch { studyDays = {}; }
+
+  if (!studyDays[weekStr]) studyDays[weekStr] = [];
+  if (!studyDays[weekStr].includes(dayOfWeek)) {
+    studyDays[weekStr].push(dayOfWeek);
+  }
+
+  let { current_weekly_streak: streak, longest_weekly_streak: longest, last_week_completed: lastCompleted } = row;
+
+  // Check if this week qualifies (4+ days)
+  if (studyDays[weekStr].length >= 4 && lastCompleted !== weekStr) {
+    // Check continuity: last completed week should be the previous week or this is first
+    const currentNum = weekToNum(weekStr);
+    const lastNum = weekToNum(lastCompleted);
+
+    if (!lastCompleted || currentNum === lastNum + 1) {
+      streak += 1;
+    } else {
+      streak = 1;
+    }
+
+    if (streak > longest) longest = streak;
+    lastCompleted = weekStr;
+  }
+
+  // Prune old weeks (keep only current and previous)
+  const currentNum = weekToNum(weekStr);
+  for (const k of Object.keys(studyDays)) {
+    if (weekToNum(k) < currentNum - 1) delete studyDays[k];
+  }
+
+  // Check for broken streak: if we're in a new week and the previous week wasn't completed
+  if (lastCompleted) {
+    const lastNum = weekToNum(lastCompleted);
+    if (currentNum > lastNum + 1) {
+      streak = 0;
+    }
+  }
+
+  db.prepare(
+    `UPDATE weekly_streaks SET
+       current_weekly_streak = ?, longest_weekly_streak = ?,
+       week_study_days = ?, last_week_completed = ?
+     WHERE profile_id = ?`
+  ).run(streak, longest, JSON.stringify(studyDays), lastCompleted, profileId);
+}
+
+/**
+ * Get weekly streak data for a profile.
+ */
+export function getWeeklyStreak(profileId) {
+  db.prepare(
+    `INSERT OR IGNORE INTO weekly_streaks (profile_id, week_study_days, last_week_completed)
+     VALUES (?, '{}', NULL)`
+  ).run(profileId);
+
+  const row = db.prepare('SELECT * FROM weekly_streaks WHERE profile_id = ?').get(profileId);
+  const { weekStr } = getISOWeekInfo();
+  let studyDays = {};
+  try { studyDays = JSON.parse(row.week_study_days || '{}'); } catch { studyDays = {}; }
+  const daysThisWeek = studyDays[weekStr] || [];
+
+  return {
+    currentWeeklyStreak: row.current_weekly_streak,
+    longestWeeklyStreak: row.longest_weekly_streak,
+    daysStudiedThisWeek: daysThisWeek.length,
+    daysRequired: 4,
+    streakFreezes: row.streak_freezes
   };
 }
 

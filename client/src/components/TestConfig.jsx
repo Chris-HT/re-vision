@@ -1,14 +1,26 @@
 import { useState, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
 
+const SESSION_PRESETS = {
+  primary: { quick: 5, standard: 8, extended: 12 },
+  secondary: { quick: 8, standard: 10, extended: 15 },
+  adult: { quick: 10, standard: 15, extended: 20 }
+};
+
 export default function TestConfig({ profile, onStartTest, previousTests, literalLanguage }) {
+  const ageGroup = profile?.ageGroup || 'adult';
+  const presets = SESSION_PRESETS[ageGroup] || SESSION_PRESETS.adult;
+  const defaultPreset = profile?.sessionPreset || 'standard';
+  const defaultCount = presets[defaultPreset] || presets.standard;
+
   const [formData, setFormData] = useState({
     topic: '',
     additionalContext: '',
     format: 'mix',
-    count: 10,
-    difficulty: profile?.ageGroup === 'primary' ? 'easy' : profile?.ageGroup === 'secondary' ? 'medium' : 'hard'
+    count: defaultCount,
+    difficulty: ageGroup === 'primary' ? 'easy' : ageGroup === 'secondary' ? 'medium' : 'hard'
   });
+  const [activePreset, setActivePreset] = useState(defaultPreset);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPrevious, setShowPrevious] = useState(false);
@@ -156,12 +168,35 @@ export default function TestConfig({ profile, onStartTest, previousTests, litera
             <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
               Number of Questions: {formData.count}
             </label>
+            <div className="flex gap-2 mb-3">
+              {Object.entries(presets).map(([key, count]) => (
+                <button
+                  key={key}
+                  type="button"
+                  disabled={loading}
+                  onClick={() => {
+                    setActivePreset(key);
+                    setFormData({ ...formData, count });
+                  }}
+                  className={`flex-1 py-2 rounded-md text-sm font-medium transition-colors ${
+                    activePreset === key ? 'bg-blue-600 text-white' : ''
+                  }`}
+                  style={activePreset !== key ? { backgroundColor: 'var(--bg-input)', color: 'var(--text-secondary)' } : undefined}
+                >
+                  <span className="capitalize">{key}</span> ({count})
+                  <span className="block text-xs opacity-75">~{Math.round(count * 1.5)} min</span>
+                </button>
+              ))}
+            </div>
             <input
               type="range"
               min="5"
               max="20"
               value={formData.count}
-              onChange={(e) => setFormData({ ...formData, count: parseInt(e.target.value) })}
+              onChange={(e) => {
+                setActivePreset(null);
+                setFormData({ ...formData, count: parseInt(e.target.value) });
+              }}
               disabled={loading}
               className="w-full"
             />

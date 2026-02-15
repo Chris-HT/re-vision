@@ -103,6 +103,7 @@ export default function TestQuestion({
   };
 
   const progress = (questionNumber / totalQuestions) * 100;
+  const remaining = totalQuestions - questionNumber;
 
   return (
     <div className="max-w-3xl mx-auto p-6">
@@ -118,11 +119,21 @@ export default function TestQuestion({
           </div>
         </div>
         <div className="w-full rounded-full h-3 overflow-hidden" style={{ backgroundColor: 'var(--bg-input)' }}>
-          <div 
+          <div
             className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-300"
             style={{ width: `${progress}%` }}
           />
         </div>
+        {remaining === 1 && (
+          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+            Last question — you'll see your results next
+          </p>
+        )}
+        {remaining === 2 && (
+          <p className="text-xs mt-2" style={{ color: 'var(--text-muted)' }}>
+            2 questions left
+          </p>
+        )}
       </div>
 
       <div className="rounded-lg p-8" style={{ backgroundColor: 'var(--bg-card-solid)' }}>

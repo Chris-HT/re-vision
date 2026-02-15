@@ -118,6 +118,11 @@
   animation: confetti 1.5s ease-out forwards;
 }
 
+/* Focus mode: hide decorative elements */
+[data-focus-mode="true"] .focus-hideable {
+  display: none !important;
+}
+
 @layer utilities {
   .perspective-1000 {
     perspective: 1000px;

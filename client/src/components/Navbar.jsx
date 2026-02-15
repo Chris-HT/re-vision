@@ -62,7 +62,7 @@ export default function Navbar({ profile, onLogout }) {
                   <CoinCounter />
                   <TokenCounter />
                 </div>
-                <PreferencesPanel profileId={profile.id} />
+                <PreferencesPanel profileId={profile.id} profile={profile} />
                 <ThemeSwitcher profileId={profile.id} />
                 <span className="hidden md:inline text-2xl">{profile.icon}</span>
                 <span style={{ color: 'var(--text-primary)' }} className="hidden md:inline font-medium">{profile.name}</span>

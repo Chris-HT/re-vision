@@ -3,15 +3,18 @@ import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
 import { useGamification } from '../context/GamificationContext';
+import { useStudyTimer } from '../context/StudyTimerContext';
 import TestConfig from '../components/TestConfig';
 import TestQuestion from '../components/TestQuestion';
 import TestResults from '../components/TestResults';
+import SessionPreview from '../components/SessionPreview';
 
 export default function DynamicTest({ profile }) {
   const navigate = useNavigate();
   const { literalLanguage } = useTheme();
   const gam = useGamification();
-  const [testState, setTestState] = useState('config'); // config, testing, results
+  const studyTimer = useStudyTimer();
+  const [testState, setTestState] = useState('config'); // config, preview, testing, results
   const [testData, setTestData] = useState(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState([]);
@@ -52,11 +55,25 @@ export default function DynamicTest({ profile }) {
     initialize();
   }, [profile, navigate]);
 
+  // Start/stop study timer based on test state
+  useEffect(() => {
+    if (testState === 'testing' && studyTimer) {
+      studyTimer.startStudying();
+    } else if (studyTimer) {
+      studyTimer.stopStudying();
+    }
+    return () => { if (studyTimer) studyTimer.stopStudying(); };
+  }, [testState]);
+
   const handleStartTest = (data) => {
     setTestData(data);
-    setTestState('testing');
+    setTestState('preview');
     setCurrentQuestionIndex(0);
     setAnswers([]);
+  };
+
+  const handleConfirmStart = () => {
+    setTestState('testing');
   };
 
   const handleAnswerSubmit = (answer) => {
@@ -160,6 +177,18 @@ export default function DynamicTest({ profile }) {
               literalLanguage={literalLanguage}
             />
           </>
+        )}
+
+        {testState === 'preview' && testData && (
+          <SessionPreview
+            questionCount={testData.questions.length}
+            format={testData.meta?.format}
+            topic={testData.meta?.topic}
+            estimatedMinutes={Math.round(testData.questions.length * 1.5)}
+            nextStep="After this: You'll see your results and can generate a study report"
+            onStart={handleConfirmStart}
+            onBack={() => setTestState('config')}
+          />
         )}
 
         {testState === 'testing' && testData && (
