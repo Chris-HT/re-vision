@@ -116,6 +116,7 @@ All data is stored in SQLite (`data/revision.db`) with these tables:
 - **learning_profiles** (cumulative per-user weak/strong area tracking)
 - **profile_xp** + **subject_xp** + **profile_coins** + **coin_transactions** (gamification XP/coins)
 - **achievements** + **profile_achievements** (achievement definitions and per-user unlocks)
+- **profile_tokens** + **token_transactions** + **token_test_history** (family token system)
 
 The DAL layer (`server/dal/`) provides functions that return JSON shapes matching the original API responses, so the frontend requires zero changes.
 
@@ -137,6 +138,9 @@ See `server/db/schema.sql` for full schema. Key tables:
 - `profile_achievements`: profile_id + achievement_id (PK), unlocked_at
 - `profiles` (auth columns added via ALTER): pin_hash, role (admin/parent/child)
 - `parent_child`: parent_id, child_id (links parents to children)
+- `profile_tokens`: profile_id (PK), tokens, daily_earned, daily_reset_date, token_rate (default 0.10)
+- `token_transactions`: id, profile_id, amount, reason, session_id, created_at
+- `token_test_history`: profile_id + test_key (PK), times_completed, best_score
 
 ### Migration
 
@@ -180,6 +184,12 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
 - `GET /api/gamification/:profileId` - Returns XP, level, coins, achievement counts. Uses `canAccessProfile`.
 - `POST /api/gamification/:profileId/award` - Award XP and/or coins, check achievements. Body: `{ xp, coins, reason, subjectId? }`. Returns updated totals + newly unlocked achievements.
 - `GET /api/gamification/:profileId/achievements` - Returns all achievements with per-profile unlock status
+
+### Tokens API (`server/routes/tokens.js`) — authenticated
+- `GET /api/tokens/children/summary` - All children's token summaries. Requires admin/parent role.
+- `GET /api/tokens/:profileId` - Token balance + daily info. Uses `canAccessProfile`.
+- `GET /api/tokens/:profileId/transactions?limit=20` - Transaction history. Uses `canAccessProfile`.
+- `PUT /api/tokens/:profileId/rate` - Set conversion rate. Requires admin/parent + `canAccessProfile`. Body: `{ rate }`.
 
 ### Generated Question Caching
 - Generated questions are cached in the `generated_cache` SQLite table
@@ -339,13 +349,25 @@ Comprehensive review addressing 24 issues across security, bugs, performance, an
 - **Server hooks**: `PUT /api/progress/:profileId/card/:cardId` returns gamification data alongside card progress; `POST /api/report` awards test completion bonus (50 XP + 20 coins)
 - **Subject XP**: Per-subject XP tracking via `subject_xp` table (awarded when `subjectId` provided in award call)
 
+### Phase 7c (Complete)
+- **Family Token system**: Children earn tokens from test completions that parents can convert to real money
+- **Token earning rules**: Score gate (< 50% = 0 tokens), base by difficulty (easy=2, medium=3, hard=5), score multiplier: `ceil(base * (score - 50) / 50)`
+- **Anti-gaming measures**: 50% diminishing returns per repeat (1st=100%, 2nd=50%, 3rd=25%, 4th+=0), max 3 repetitions per test, 100% score = mastered (no more tokens), daily cap of 10 tokens
+- **Test key**: Unique test identifier = lowercase `topic-difficulty-format` for tracking repeats
+- **Token rate**: Per-child conversion rate (default £0.10/token), parent-adjustable via Family Dashboard
+- **Navbar integration**: TokenCounter shown alongside XPBar and CoinCounter in desktop nav and mobile hamburger menu
+- **TestResults display**: After generating study report, shows token reward earned (or reason for 0 tokens)
+- **Family Dashboard**: Token balance + monetary value per child, inline rate editor, collapsible transaction history
+- **Server hook**: `POST /api/report` calculates and awards tokens alongside gamification XP/coins, returns `tokenReward` in response
+- **Database**: `profile_tokens` (balance, daily counter, rate), `token_transactions` (log), `token_test_history` (repeat tracking)
+
 ## Important Conventions
 
 ### File Organization
 - **Components**: Reusable UI elements
   - Core: `FlashcardDeck`, `ConfigPanel`, `Navbar`, `PinInput`
   - Dashboard: `StatsCards`, `AccuracyChart`, `CategoryStrength`, `WeakestCards`, `Heatmap`, `TestReports`, `Achievements`
-  - Features: `ExportPDF`, `ImportExport`, `Timer`, `ThemeSwitcher`, `ColorPresets`, `StudyReport`, `XPBar`, `CoinCounter`
+  - Features: `ExportPDF`, `ImportExport`, `Timer`, `ThemeSwitcher`, `ColorPresets`, `StudyReport`, `XPBar`, `CoinCounter`, `TokenCounter`
   - Gamification: `RewardPopup`, `LevelUpModal`, `AchievementToast`, `RewardRenderer`
   - Wizards: `FlashcardGenerationWizard`, `TestConfig`, `TestQuestion`, `TestResults`
 - **Pages**: Route-level components
@@ -373,6 +395,7 @@ Comprehensive review addressing 24 issues across security, bugs, performance, an
   - `cache.js` - Generated question cache
   - `reports.js` - Test sessions, test reports, learning profiles
   - `gamification.js` - XP, levels, coins, achievements, unlock checking
+  - `tokens.js` - Token balance, rewards, daily caps, test history, conversion rates
 - **DB**: Database setup
   - `index.js` - SQLite singleton with WAL mode
   - `schema.sql` - Table definitions
@@ -467,6 +490,26 @@ XP, levels, coins, and achievements are managed via `GamificationContext` (clien
 | Test answer < 40% | 3 | 0 |
 | Test completion bonus | 50 | 20 |
 
+### Family Token System
+Tokens are a parent-managed reward currency earned from test completions, managed via `server/dal/tokens.js` and `GamificationContext` (client):
+- **Earning**: Tokens awarded server-side only (not optimistic) after study report generation via `POST /api/report`
+- **Score gate**: Score < 50% earns 0 tokens
+- **Base by difficulty**: easy=2, medium=3, hard=5. Multiplied by `ceil(base * (score - 50) / 50)`
+- **Diminishing returns**: Per test key (`topic-difficulty-format`): 1st=100%, 2nd=50%, 3rd=25%, 4th+=0
+- **Mastery**: If `best_score` = 100% for a test key, no more tokens from that test
+- **Daily cap**: 10 tokens per day (resets at midnight local time)
+- **Conversion rate**: Per-child, default £0.10/token, parent-adjustable via Family Dashboard
+- **Client state**: `tokens` in `GamificationContext`, fetched from server (not optimistic). Updated via `setTokens()` after report response.
+
+| Scenario | Base | Score Mult | Repeat | Daily | Result |
+|----------|------|-----------|--------|-------|--------|
+| Medium, 80%, 1st attempt | 3 | ceil(3x0.6)=2 | 100% | OK | **2 tokens** |
+| Hard, 95%, 1st attempt | 5 | ceil(5x0.9)=5 | 100% | OK | **5 tokens** |
+| Hard, 95%, 2nd attempt | 5 | 5 | 50%→3 | OK | **3 tokens** |
+| Easy, 60%, 3rd attempt | 2 | ceil(2x0.2)=1 | 25%→1 | OK | **1 token** |
+| Any, 100%, future attempts | — | — | mastered | — | **0 tokens** |
+| Any, 45% | — | gate | — | — | **0 tokens** |
+
 ### Theme System
 Themes are managed via CSS variables (`client/src/index.css`) and React Context (`ThemeContext`):
 - **dark**: Slate gradient (default)
@@ -520,11 +563,13 @@ Subjects are now stored in SQLite. To add one:
 - `server/dal/cache.js` - Data access: generated question cache
 - `server/dal/reports.js` - Data access: test sessions, reports, learning profiles
 - `server/dal/gamification.js` - Data access: XP, levels, coins, achievements, unlock logic
+- `server/dal/tokens.js` - Data access: token balance, rewards, daily caps, test history, conversion rates
 - `server/routes/auth.js` - Authentication routes (login, PIN setup, token validation, children)
 - `server/routes/claude.js` - AI-powered question generation, marking, study reports, and learning profiles
 - `server/routes/questions.js` - Question bank API routes (delegates to DAL, admin-only for save/import)
 - `server/routes/progress.js` - Progress tracking API routes (delegates to DAL, profile access checks, gamification hooks)
 - `server/routes/gamification.js` - Gamification API routes (XP, coins, achievements)
+- `server/routes/tokens.js` - Token API routes (balance, transactions, rate management)
 - `server/middleware/auth.js` - JWT authentication, role checking, profile access control
 - `server/utils/spacedRepetition.js` - SM-2 algorithm for review scheduling
 - `server/utils/streaks.js` - Statistics and streak tracking
@@ -546,6 +591,7 @@ Subjects are now stored in SQLite. To add one:
 - `client/src/components/RewardRenderer.jsx` - Global reward queue renderer (popups, level-up, toasts)
 - `client/src/components/XPBar.jsx` - Navbar level and XP progress bar
 - `client/src/components/CoinCounter.jsx` - Navbar coin display
+- `client/src/components/TokenCounter.jsx` - Navbar token display
 - `client/src/hooks/useProgress.js` - Progress tracking hook
 - `client/vite.config.js` - API proxy configuration
 

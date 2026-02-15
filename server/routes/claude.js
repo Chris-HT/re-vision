@@ -8,6 +8,7 @@ import {
 } from '../dal/reports.js';
 import { canAccessProfile } from '../middleware/auth.js';
 import { awardXP, awardCoins, checkAndUnlockAchievements } from '../dal/gamification.js';
+import { calculateTokenReward, awardTokens, recordTestCompletion } from '../dal/tokens.js';
 
 const router = express.Router();
 
@@ -521,7 +522,24 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
     awardCoins(profileId, 20, 'test-completion');
     const newAchievements = checkAndUnlockAchievements(profileId);
 
-    res.json({ success: true, report: reportData, sessionId, gamification: { xp: xpResult, newAchievements } });
+    // Token system: calculate and award tokens based on test performance
+    const difficulty = testData.meta?.difficulty || 'medium';
+    const format = testData.meta?.format || 'mix';
+    const testKey = `${topic}-${difficulty}-${format}`.toLowerCase();
+    const tokenCalc = calculateTokenReward(profileId, totalScore, difficulty, testKey);
+    let tokenNewBalance = null;
+    if (tokenCalc.amount > 0) {
+      tokenNewBalance = awardTokens(profileId, tokenCalc.amount, tokenCalc.reason, sessionId);
+    }
+    recordTestCompletion(profileId, testKey, totalScore);
+
+    res.json({
+      success: true, report: reportData, sessionId,
+      gamification: {
+        xp: xpResult, newAchievements,
+        tokenReward: { amount: tokenCalc.amount, reason: tokenCalc.reason, newBalance: tokenNewBalance }
+      }
+    });
   } catch (error) {
     console.error('Report generation error:', error);
     res.status(500).json({

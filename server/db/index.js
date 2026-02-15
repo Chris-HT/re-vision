@@ -79,6 +79,32 @@ db.exec(`
   );
 `);
 
+// Token system tables
+db.exec(`
+  CREATE TABLE IF NOT EXISTS profile_tokens (
+    profile_id TEXT PRIMARY KEY,
+    tokens INTEGER DEFAULT 0,
+    daily_earned INTEGER DEFAULT 0,
+    daily_reset_date TEXT,
+    token_rate REAL DEFAULT 0.10
+  );
+  CREATE TABLE IF NOT EXISTS token_transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_id TEXT,
+    amount INTEGER,
+    reason TEXT,
+    session_id TEXT,
+    created_at TEXT
+  );
+  CREATE TABLE IF NOT EXISTS token_test_history (
+    profile_id TEXT,
+    test_key TEXT,
+    times_completed INTEGER DEFAULT 0,
+    best_score INTEGER DEFAULT 0,
+    PRIMARY KEY(profile_id, test_key)
+  );
+`);
+
 // Seed achievements
 const seedAchievements = [
   ['first-card',    'First Steps',    'Review your first card',    '👶', 'cards',   1],

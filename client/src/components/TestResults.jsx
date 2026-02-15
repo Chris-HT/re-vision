@@ -19,6 +19,7 @@ export default function TestResults({
   const [report, setReport] = useState(null);
   const [reportLoading, setReportLoading] = useState(false);
   const [reportError, setReportError] = useState(null);
+  const [tokenReward, setTokenReward] = useState(null);
 
   const totalScore = answers.length > 0
     ? Math.round(answers.reduce((sum, a) => sum + (a?.score || 0), 0) / answers.length)
@@ -87,6 +88,14 @@ export default function TestResults({
       }
 
       setReport(data.report);
+
+      // Handle token reward from response
+      if (data.gamification?.tokenReward) {
+        setTokenReward(data.gamification.tokenReward);
+        if (data.gamification.tokenReward.newBalance != null && gam?.setTokens) {
+          gam.setTokens(data.gamification.tokenReward.newBalance);
+        }
+      }
     } catch (err) {
       setReportError(err.message);
     } finally {
@@ -138,6 +147,27 @@ export default function TestResults({
               <span>&#x1FA99;</span>
               <span className="font-bold text-amber-400">{gam.coins} coins</span>
             </div>
+            <div className="flex items-center space-x-1">
+              <span>💷</span>
+              <span className="font-bold text-emerald-400">{gam.tokens} tokens</span>
+            </div>
+          </div>
+        )}
+
+        {tokenReward && (
+          <div className={`rounded-lg p-4 mb-6 text-center ${tokenReward.amount > 0 ? 'bg-emerald-900/50 border border-emerald-600' : 'border'}`}
+            style={tokenReward.amount <= 0 ? { backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)' } : {}}>
+            {tokenReward.amount > 0 ? (
+              <>
+                <p className="text-lg font-bold text-emerald-300">💷 You earned {tokenReward.amount} token{tokenReward.amount !== 1 ? 's' : ''}!</p>
+                <p className="text-sm text-emerald-200 mt-1">{tokenReward.reason}</p>
+              </>
+            ) : (
+              <>
+                <p className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>No tokens earned this time</p>
+                <p className="text-xs mt-1" style={{ color: 'var(--text-muted)' }}>{tokenReward.reason}</p>
+              </>
+            )}
           </div>
         )}
 

@@ -7,6 +7,11 @@ export default function FamilyDashboard({ profile }) {
   const [children, setChildren] = useState([]);
   const [childStats, setChildStats] = useState({});
   const [childReports, setChildReports] = useState({});
+  const [childTokens, setChildTokens] = useState({});
+  const [tokenHistory, setTokenHistory] = useState({});
+  const [expandedHistory, setExpandedHistory] = useState({});
+  const [editingRate, setEditingRate] = useState({});
+  const [rateInputs, setRateInputs] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -35,6 +40,15 @@ export default function FamilyDashboard({ profile }) {
             .catch(() => ({ reports: [] }));
         }
 
+        // Fetch token summaries
+        const tokenRes = await apiFetch('/api/tokens/children/summary', { signal: controller.signal })
+          .then(r => r.ok ? r.json() : { summaries: [] })
+          .catch(() => ({ summaries: [] }));
+        const tokenMap = {};
+        for (const s of tokenRes.summaries || []) {
+          tokenMap[s.profileId] = s;
+        }
+
         const statsResults = {};
         const reportsResults = {};
         for (const child of data.children || []) {
@@ -43,6 +57,7 @@ export default function FamilyDashboard({ profile }) {
         }
         setChildStats(statsResults);
         setChildReports(reportsResults);
+        setChildTokens(tokenMap);
       } catch (err) {
         if (err.name !== 'AbortError') console.error('Failed to load family data:', err);
       } finally {
@@ -91,6 +106,7 @@ export default function FamilyDashboard({ profile }) {
               {children.map(child => {
                 const stats = childStats[child.id];
                 const reports = childReports[child.id]?.reports || [];
+                const tokenData = childTokens[child.id] || { tokens: 0, tokenRate: 0.10, dailyEarned: 0, dailyRemaining: 10, monetaryValue: 0 };
 
                 return (
                   <div
@@ -119,7 +135,7 @@ export default function FamilyDashboard({ profile }) {
                       </div>
 
                       {/* Stats grid */}
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                         <div className="rounded-lg p-3 text-center" style={{ backgroundColor: 'var(--bg-secondary)' }}>
                           <div className="text-2xl font-bold text-blue-400">{stats?.totalCardsStudied || 0}</div>
                           <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Cards Studied</div>
@@ -138,7 +154,123 @@ export default function FamilyDashboard({ profile }) {
                           </div>
                           <div className="text-xs" style={{ color: 'var(--text-muted)' }}>Last Active</div>
                         </div>
+                        <div className="rounded-lg p-3 text-center" style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                          <div className="text-2xl font-bold text-emerald-400">💷 {tokenData.tokens}</div>
+                          <div className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                            = £{tokenData.monetaryValue.toFixed(2)}
+                          </div>
+                        </div>
                       </div>
+                    </div>
+
+                    {/* Token management */}
+                    <div className="border-t px-6 pb-4 pt-4" style={{ borderColor: 'var(--border-color)' }}>
+                      <div className="flex items-center justify-between mb-3">
+                        <h3 className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>Token Settings</h3>
+                        <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
+                          Today: {tokenData.dailyEarned}/{tokenData.dailyEarned + tokenData.dailyRemaining} tokens earned
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>Rate: £</span>
+                        {editingRate[child.id] ? (
+                          <>
+                            <input
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              max="10"
+                              value={rateInputs[child.id] ?? tokenData.tokenRate}
+                              onChange={e => setRateInputs(prev => ({ ...prev, [child.id]: e.target.value }))}
+                              className="w-20 px-2 py-1 rounded text-sm"
+                              style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)', borderColor: 'var(--border-color)' }}
+                            />
+                            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>per token</span>
+                            <button
+                              onClick={async () => {
+                                const rate = parseFloat(rateInputs[child.id]);
+                                if (isNaN(rate) || rate < 0 || rate > 10) return;
+                                try {
+                                  await apiFetch(`/api/tokens/${child.id}/rate`, {
+                                    method: 'PUT',
+                                    body: JSON.stringify({ rate })
+                                  });
+                                  setChildTokens(prev => ({
+                                    ...prev,
+                                    [child.id]: { ...prev[child.id], tokenRate: rate, monetaryValue: parseFloat((prev[child.id].tokens * rate).toFixed(2)) }
+                                  }));
+                                } catch { /* ignore */ }
+                                setEditingRate(prev => ({ ...prev, [child.id]: false }));
+                              }}
+                              className="px-2 py-1 bg-green-600 hover:bg-green-500 text-white text-xs rounded transition-colors"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => setEditingRate(prev => ({ ...prev, [child.id]: false }))}
+                              className="px-2 py-1 text-xs rounded transition-colors"
+                              style={{ color: 'var(--text-muted)' }}
+                            >
+                              Cancel
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>
+                              {tokenData.tokenRate.toFixed(2)} per token
+                            </span>
+                            <button
+                              onClick={() => {
+                                setRateInputs(prev => ({ ...prev, [child.id]: tokenData.tokenRate.toFixed(2) }));
+                                setEditingRate(prev => ({ ...prev, [child.id]: true }));
+                              }}
+                              className="px-2 py-1 text-xs bg-blue-600 hover:bg-blue-500 text-white rounded transition-colors"
+                            >
+                              Change
+                            </button>
+                          </>
+                        )}
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (expandedHistory[child.id]) {
+                            setExpandedHistory(prev => ({ ...prev, [child.id]: false }));
+                            return;
+                          }
+                          try {
+                            const res = await apiFetch(`/api/tokens/${child.id}/transactions?limit=10`);
+                            if (res.ok) {
+                              const data = await res.json();
+                              setTokenHistory(prev => ({ ...prev, [child.id]: data.transactions }));
+                            }
+                          } catch { /* ignore */ }
+                          setExpandedHistory(prev => ({ ...prev, [child.id]: true }));
+                        }}
+                        className="mt-3 text-xs underline"
+                        style={{ color: 'var(--text-muted)' }}
+                      >
+                        {expandedHistory[child.id] ? 'Hide token history' : 'Show token history'}
+                      </button>
+                      {expandedHistory[child.id] && tokenHistory[child.id] && (
+                        <div className="mt-2 space-y-1">
+                          {tokenHistory[child.id].length === 0 ? (
+                            <p className="text-xs" style={{ color: 'var(--text-muted)' }}>No token transactions yet.</p>
+                          ) : (
+                            tokenHistory[child.id].map(tx => (
+                              <div key={tx.id} className="flex items-center justify-between rounded p-2 text-xs"
+                                style={{ backgroundColor: 'var(--bg-secondary)' }}>
+                                <div>
+                                  <span className="font-bold text-emerald-400">+{tx.amount}</span>
+                                  <span className="ml-2" style={{ color: 'var(--text-secondary)' }}>{tx.reason}</span>
+                                </div>
+                                <span style={{ color: 'var(--text-muted)' }}>
+                                  {new Date(tx.createdAt).toLocaleDateString()}
+                                </span>
+                              </div>
+                            ))
+                          )}
+                        </div>
+                      )}
                     </div>
 
                     {/* Recent test reports */}

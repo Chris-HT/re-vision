@@ -17,6 +17,7 @@ export function GamificationProvider({ profileId, children }) {
   const [rewardQueue, setRewardQueue] = useState([]);
   const [achievementsUnlocked, setAchievementsUnlocked] = useState(0);
   const [achievementsTotal, setAchievementsTotal] = useState(10);
+  const [tokens, setTokens] = useState(0);
 
   // Accumulated awards to sync to server
   const pendingXp = useRef(0);
@@ -36,6 +37,12 @@ export function GamificationProvider({ profileId, children }) {
         setCoins(data.coins);
         setAchievementsUnlocked(data.achievementsUnlocked);
         setAchievementsTotal(data.achievementsTotal);
+      }
+      // Fetch token balance
+      const tokenRes = await apiFetch(`/api/tokens/${profileId}`);
+      if (tokenRes.ok) {
+        const tokenData = await tokenRes.json();
+        setTokens(tokenData.tokens);
       }
     } catch {
       // Non-critical
@@ -152,6 +159,7 @@ export function GamificationProvider({ profileId, children }) {
   const value = {
     xp, level, coins, combo, xpProgress, xpRequired,
     achievementsUnlocked, achievementsTotal,
+    tokens, setTokens,
     rewardQueue,
     awardXP, awardCoins, incrementCombo, resetCombo,
     syncToServer, fetchGamification, dismissReward,

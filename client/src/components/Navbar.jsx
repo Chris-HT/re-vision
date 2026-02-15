@@ -4,6 +4,7 @@ import ThemeSwitcher from './ThemeSwitcher';
 import PreferencesPanel from './PreferencesPanel';
 import XPBar from './XPBar';
 import CoinCounter from './CoinCounter';
+import TokenCounter from './TokenCounter';
 
 export default function Navbar({ profile, onLogout }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -59,6 +60,7 @@ export default function Navbar({ profile, onLogout }) {
                 <div className="hidden md:flex items-center space-x-3 mr-2">
                   <XPBar />
                   <CoinCounter />
+                  <TokenCounter />
                 </div>
                 <PreferencesPanel profileId={profile.id} />
                 <ThemeSwitcher profileId={profile.id} />
@@ -124,6 +126,7 @@ export default function Navbar({ profile, onLogout }) {
             <div className="flex items-center space-x-4 px-3 py-2">
               <XPBar compact />
               <CoinCounter compact />
+              <TokenCounter compact />
             </div>
 
             {/* Profile info and logout in mobile menu */}
