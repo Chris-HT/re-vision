@@ -22,7 +22,7 @@ export default function Results() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 py-8">
+    <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
       <ResultsScreen
         results={results}
         categories={categories}

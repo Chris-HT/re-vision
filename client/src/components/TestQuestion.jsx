@@ -85,16 +85,16 @@ export default function TestQuestion({
     <div className="max-w-3xl mx-auto p-6">
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          <span className="text-sm text-slate-400">
             Question {questionNumber} of {totalQuestions}
           </span>
           <div className="flex items-center space-x-2">
-            <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
+            <span className="text-xs text-slate-400">
               Difficulty: {Array(question.difficulty || 2).fill('⭐').join('')}
             </span>
           </div>
         </div>
-        <div className="w-full rounded-full h-3 overflow-hidden" style={{ backgroundColor: 'var(--bg-input)' }}>
+        <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
           <div 
             className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-300"
             style={{ width: `${progress}%` }}
@@ -102,8 +102,8 @@ export default function TestQuestion({
         </div>
       </div>
 
-      <div className="rounded-lg p-8" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
-        <h3 className="text-2xl font-semibold mb-6" style={{ color: 'var(--text-primary)' }}>
+      <div className="bg-slate-800 rounded-lg p-8">
+        <h3 className="text-2xl font-semibold text-white mb-6">
           {question.question}
         </h3>
 
@@ -127,11 +127,10 @@ export default function TestQuestion({
                       ? 'bg-red-600/20 border-2 border-red-500'
                       : isSelected
                       ? 'bg-blue-600/20 border-2 border-blue-500'
-                      : 'border-2 border-transparent'
+                      : 'bg-slate-700 hover:bg-slate-600 border-2 border-transparent'
                   }`}
-                  style={!isCorrect && !isWrong && !isSelected ? { backgroundColor: 'var(--bg-input)' } : undefined}
                 >
-                  <span style={{ color: 'var(--text-primary)' }}>{option}</span>
+                  <span className="text-white">{option}</span>
                   {submitted && isCorrect && (
                     <span className="ml-2 text-green-400">✓ Correct</span>
                   )}
@@ -153,9 +152,9 @@ export default function TestQuestion({
             )}
             
             {submitted && (
-              <div className="mt-6 p-4 rounded-lg" style={{ backgroundColor: 'var(--bg-input)' }}>
-                <p className="font-medium mb-2" style={{ color: 'var(--text-primary)' }}>Explanation:</p>
-                <p style={{ color: 'var(--text-secondary)' }}>{question.answer}</p>
+              <div className="mt-6 p-4 bg-slate-700 rounded-lg">
+                <p className="text-white font-medium mb-2">Explanation:</p>
+                <p className="text-slate-200">{question.answer}</p>
               </div>
             )}
           </div>
@@ -166,8 +165,7 @@ export default function TestQuestion({
               onChange={(e) => setFreeTextAnswer(e.target.value)}
               placeholder="Type your answer here..."
               disabled={submitted || marking}
-              className="w-full h-32 px-4 py-3 border rounded-lg placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
+              className="w-full h-32 px-4 py-3 bg-slate-700 border border-slate-600 rounded-lg text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             
             {!submitted && (
@@ -195,9 +193,9 @@ export default function TestQuestion({
             
             {submitted && markingResult && (
               <div className="space-y-4">
-                <div className="rounded-lg p-6" style={{ backgroundColor: 'var(--bg-input)' }}>
+                <div className="bg-slate-700 rounded-lg p-6">
                   <div className="flex items-center justify-between mb-4">
-                    <h4 className="text-lg font-semibold" style={{ color: 'var(--text-primary)' }}>Your Score</h4>
+                    <h4 className="text-lg font-semibold text-white">Your Score</h4>
                     <span className={`text-3xl font-bold ${getScoreColor(markingResult.score)}`}>
                       {markingResult.score}%
                     </span>
@@ -205,16 +203,16 @@ export default function TestQuestion({
                   
                   <div className="space-y-3">
                     <div>
-                      <p className="text-sm font-medium mb-1" style={{ color: 'var(--text-secondary)' }}>Feedback</p>
-                      <p style={{ color: 'var(--text-primary)' }}>{markingResult.feedback}</p>
+                      <p className="text-sm font-medium text-slate-400 mb-1">Feedback</p>
+                      <p className="text-white">{markingResult.feedback}</p>
                     </div>
                     
                     {markingResult.keyPointsMissed?.length > 0 && (
                       <div>
-                        <p className="text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>Points to improve</p>
+                        <p className="text-sm font-medium text-slate-400 mb-2">Points to improve</p>
                         <div className="flex flex-wrap gap-2">
                           {markingResult.keyPointsMissed.map((point, i) => (
-                            <span key={i} className="px-3 py-1 rounded-full text-sm" style={{ backgroundColor: 'var(--bg-secondary)', color: 'var(--text-secondary)' }}>
+                            <span key={i} className="px-3 py-1 bg-slate-600 rounded-full text-sm text-slate-200">
                               {point}
                             </span>
                           ))}

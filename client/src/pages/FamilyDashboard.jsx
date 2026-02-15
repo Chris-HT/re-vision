@@ -15,9 +15,10 @@ export default function FamilyDashboard({ profile }) {
       return;
     }
 
+    const controller = new AbortController();
     const fetchFamily = async () => {
       try {
-        const res = await apiFetch('/api/auth/children');
+        const res = await apiFetch('/api/auth/children', { signal: controller.signal });
         if (!res.ok) throw new Error('Failed to fetch children');
         const data = await res.json();
         setChildren(data.children || []);
@@ -26,10 +27,10 @@ export default function FamilyDashboard({ profile }) {
         const statsPromises = {};
         const reportsPromises = {};
         for (const child of data.children || []) {
-          statsPromises[child.id] = apiFetch(`/api/progress/${child.id}/stats`)
+          statsPromises[child.id] = apiFetch(`/api/progress/${child.id}/stats`, { signal: controller.signal })
             .then(r => r.ok ? r.json() : null)
             .catch(() => null);
-          reportsPromises[child.id] = apiFetch(`/api/reports/${child.id}?limit=3`)
+          reportsPromises[child.id] = apiFetch(`/api/reports/${child.id}?limit=3`, { signal: controller.signal })
             .then(r => r.ok ? r.json() : { reports: [] })
             .catch(() => ({ reports: [] }));
         }
@@ -43,13 +44,14 @@ export default function FamilyDashboard({ profile }) {
         setChildStats(statsResults);
         setChildReports(reportsResults);
       } catch (err) {
-        console.error('Failed to load family data:', err);
+        if (err.name !== 'AbortError') console.error('Failed to load family data:', err);
       } finally {
         setLoading(false);
       }
     };
 
     fetchFamily();
+    return () => controller.abort();
   }, [profile, navigate]);
 
   function timeAgo(dateStr) {

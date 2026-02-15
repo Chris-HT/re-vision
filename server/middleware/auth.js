@@ -16,6 +16,8 @@ export function getJwtSecret() {
   return _jwtSecret;
 }
 
+// For backwards compat with auth routes import
+export { getJwtSecret as jwtSecret };
 
 export function authenticate(req, res, next) {
   const header = req.headers.authorization;

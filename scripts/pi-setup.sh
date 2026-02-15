@@ -46,6 +46,7 @@ npm run install-all
 
 # 6. Build client
 echo "Building client..."
+mkdir -p logs
 npm run build
 
 # 7. Set up .env file

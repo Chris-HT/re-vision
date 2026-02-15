@@ -21,6 +21,9 @@
     "concurrently": "^8.2.2"
   },
   "devDependencies": {},
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "keywords": ["education", "flashcards", "study"],
   "author": "",
   "license": "MIT"

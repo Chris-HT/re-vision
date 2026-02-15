@@ -20,6 +20,19 @@ export function setCache(cacheKey, { topic, ageGroup, difficulty, count, format 
 }
 
 /**
+ * Remove cached entries older than the given number of days.
+ * Called periodically to prevent unbounded table growth.
+ */
+export function evictStaleCache(maxAgeDays = 30) {
+  const cutoff = new Date();
+  cutoff.setDate(cutoff.getDate() - maxAgeDays);
+  const result = db.prepare(
+    'DELETE FROM generated_cache WHERE generated_at < ?'
+  ).run(cutoff.toISOString());
+  return result.changes;
+}
+
+/**
  * Get the index of all cached generations (replaces generated/index.json).
  */
 export function getCacheIndex() {
@@ -40,10 +53,3 @@ export function getCacheIndex() {
   };
 }
 
-/**
- * Get a single cached generation by key.
- */
-export function getCachedGeneration(cacheKey) {
-  const row = db.prepare('SELECT data FROM generated_cache WHERE cache_key = ?').get(cacheKey);
-  return row ? JSON.parse(row.data) : null;
-}

@@ -16,9 +16,18 @@ git pull origin master
 echo "Installing dependencies..."
 npm run install-all
 
+# Ensure logs directory exists
+mkdir -p logs
+
 # Rebuild client
 echo "Building client..."
 npm run build
+
+# Validate build output
+if [ ! -f client/dist/index.html ]; then
+  echo "ERROR: Build failed — client/dist/index.html not found"
+  exit 1
+fi
 
 # Restart the server
 echo "Restarting server..."

@@ -49,9 +49,9 @@ export default function ConfigPanel({
   };
 
   return (
-    <div className="bg-slate-800 rounded-lg p-6 space-y-6">
+    <div className="rounded-lg p-6 space-y-6" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">
+        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
           Subject
         </label>
         <select
@@ -61,7 +61,8 @@ export default function ConfigPanel({
             setSelectedTheme('');
             setSelectedCategories([]);
           }}
-          className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
         >
           <option value="">Select a subject...</option>
           {subjects?.map(subject => (
@@ -74,13 +75,14 @@ export default function ConfigPanel({
 
       {currentSubject && (
         <div>
-          <label className="block text-sm font-medium text-slate-300 mb-2">
+          <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
             Theme
           </label>
           <select
             value={selectedTheme}
             onChange={(e) => setSelectedTheme(e.target.value)}
-            className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{ backgroundColor: 'var(--bg-input)', borderColor: 'var(--border-color)', color: 'var(--text-primary)' }}
           >
             <option value="">All Themes</option>
             {currentSubject.themes?.map(theme => (
@@ -95,7 +97,7 @@ export default function ConfigPanel({
       {availableCategories.length > 0 && (
         <div>
           <div className="flex justify-between items-center mb-2">
-            <label className="text-sm font-medium text-slate-300">
+            <label className="text-sm font-medium" style={{ color: 'var(--text-secondary)' }}>
               Categories
             </label>
             <div className="space-x-2">
@@ -117,7 +119,7 @@ export default function ConfigPanel({
             {availableCategories.map(category => {
               const categoryInfo = categories[category];
               const isSelected = selectedCategories.includes(category);
-              
+
               return (
                 <button
                   key={category}
@@ -125,8 +127,9 @@ export default function ConfigPanel({
                   className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
                     isSelected
                       ? `${categoryInfo.bgClass} text-white`
-                      : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                      : ''
                   }`}
+                  style={!isSelected ? { backgroundColor: 'var(--bg-input)', color: 'var(--text-secondary)' } : undefined}
                 >
                   {category}
                 </button>
@@ -137,7 +140,7 @@ export default function ConfigPanel({
       )}
 
       <div>
-        <label className="block text-sm font-medium text-slate-300 mb-2">
+        <label className="block text-sm font-medium mb-2" style={{ color: 'var(--text-secondary)' }}>
           Difficulty
         </label>
         <div className="flex space-x-2">
@@ -148,8 +151,9 @@ export default function ConfigPanel({
               className={`flex-1 py-2 px-4 rounded-md font-medium transition-all ${
                 selectedDifficulty === level
                   ? 'bg-blue-600 text-white'
-                  : 'bg-slate-700 text-slate-300 hover:bg-slate-600'
+                  : ''
               }`}
+              style={selectedDifficulty !== level ? { backgroundColor: 'var(--bg-input)', color: 'var(--text-secondary)' } : undefined}
             >
               {level === 'all' ? 'All' : `Level ${level}`}
             </button>
@@ -157,7 +161,7 @@ export default function ConfigPanel({
         </div>
       </div>
 
-      <div className="text-sm text-slate-400">
+      <div className="text-sm" style={{ color: 'var(--text-muted)' }}>
         {selectedCategories.length > 0 && (
           <p>{selectedCategories.length} categories selected</p>
         )}

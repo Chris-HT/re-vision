@@ -22,18 +22,13 @@ export function getLoginProfiles() {
   }));
 }
 
-export function getChildren(parentId, role) {
-  // Admins see all non-admin profiles; parents see linked children only
-  const rows = role === 'admin'
-    ? db.prepare(
-        "SELECT id, name, icon, age_group, role FROM profiles WHERE role != 'admin'"
-      ).all()
-    : db.prepare(
-        `SELECT p.id, p.name, p.icon, p.age_group, p.role
-         FROM parent_child pc
-         JOIN profiles p ON p.id = pc.child_id
-         WHERE pc.parent_id = ?`
-      ).all(parentId);
+export function getChildren(parentId) {
+  const rows = db.prepare(
+    `SELECT p.id, p.name, p.icon, p.age_group, p.role
+     FROM parent_child pc
+     JOIN profiles p ON p.id = pc.child_id
+     WHERE pc.parent_id = ?`
+  ).all(parentId);
   return rows.map(r => ({
     id: r.id,
     name: r.name,

@@ -7,7 +7,7 @@ export async function apiFetch(url, options = {}) {
     localStorage.removeItem('token');
     localStorage.removeItem('profile');
     window.location.href = '/';
-    throw new Error('Session expired');
+    return res;
   }
   return res;
 }

@@ -151,36 +151,29 @@ export default function FlashcardDeck({
     }
   };
 
-  const handleAnswerRef = useRef(handleAnswer);
-  const goBackRef = useRef(goBack);
-  const goForwardRef = useRef(goForward);
-  useEffect(() => { handleAnswerRef.current = handleAnswer; });
-  useEffect(() => { goBackRef.current = goBack; });
-  useEffect(() => { goForwardRef.current = goForward; });
-
   useEffect(() => {
     const handleKeyPress = (e) => {
       if (e.code === 'Space') {
         e.preventDefault();
         setIsFlipped(f => !f);
       } else if (e.key === '1') {
-        handleAnswerRef.current('correct');
+        handleAnswer('correct');
       } else if (e.key === '2') {
-        handleAnswerRef.current('missed');
+        handleAnswer('missed');
       } else if (e.key === '3') {
-        handleAnswerRef.current('skipped');
+        handleAnswer('skipped');
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
-        goBackRef.current();
+        goBack();
       } else if (e.key === 'ArrowRight') {
         e.preventDefault();
-        goForwardRef.current();
+        goForward();
       }
     };
 
     window.addEventListener('keydown', handleKeyPress);
     return () => window.removeEventListener('keydown', handleKeyPress);
-  }, []);
+  }, [isFlipped, currentIndex, answers]);
 
   if (!currentCard) return null;
 
@@ -190,7 +183,7 @@ export default function FlashcardDeck({
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-6">
         <div className="flex justify-between items-center mb-2">
-          <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+          <span className="text-sm text-slate-400">
             Card {currentIndex + 1} of {questions.length}
           </span>
           <div className="flex items-center space-x-4">
@@ -203,12 +196,12 @@ export default function FlashcardDeck({
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${categoryInfo?.bgClass} text-white`}>
               {currentCard.category}
             </span>
-            <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-              Difficulty: {Array(currentCard.difficulty || 1).fill('\u2B50').join('')}
+            <span className="text-sm text-slate-400">
+              Difficulty: {Array(currentCard.difficulty || 1).fill('').join('')}
             </span>
           </div>
         </div>
-        <div className="w-full rounded-full h-3 overflow-hidden" style={{ backgroundColor: 'var(--bg-input)' }}>
+        <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
           <div
             className="bg-gradient-to-r from-blue-500 to-purple-500 h-full transition-all duration-300"
             style={{ width: `${progress}%` }}
@@ -228,7 +221,7 @@ export default function FlashcardDeck({
             </span>
             <span className="flex items-center space-x-1 text-sm">
               <span className="inline-block w-3 h-3 rounded-full bg-slate-500"></span>
-              <span className="font-medium" style={{ color: 'var(--text-secondary)' }}>{scores.skipped}</span>
+              <span className="text-slate-400 font-medium">{scores.skipped}</span>
             </span>
           </div>
         )}
@@ -242,10 +235,10 @@ export default function FlashcardDeck({
           }`}
         >
           <div className="absolute inset-0 backface-hidden">
-            <div className="w-full h-full rounded-xl p-8 flex flex-col justify-center items-center text-center border shadow-2xl" style={{ background: 'linear-gradient(to bottom right, var(--bg-card-solid), var(--bg-input))', borderColor: 'var(--border-color)' }}>
-              <h3 className="text-2xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Question</h3>
-              <p className="text-lg" style={{ color: 'var(--text-secondary)' }}>{currentCard.question}</p>
-              <div className="absolute bottom-6 text-sm" style={{ color: 'var(--text-secondary)' }}>
+            <div className="w-full h-full bg-gradient-to-br from-slate-800 to-slate-700 rounded-xl p-8 flex flex-col justify-center items-center text-center border border-slate-600 shadow-2xl">
+              <h3 className="text-2xl font-bold text-white mb-4">Question</h3>
+              <p className="text-lg text-slate-200">{currentCard.question}</p>
+              <div className="absolute bottom-6 text-sm text-slate-400">
                 Press SPACE or click to flip
               </div>
             </div>
@@ -265,8 +258,7 @@ export default function FlashcardDeck({
         <button
           onClick={goBack}
           disabled={currentIndex === 0}
-          className="px-4 py-3 disabled:opacity-30 disabled:cursor-not-allowed font-medium rounded-lg transition-colors"
-          style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
+          className="px-4 py-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-30 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
           title="Previous card (←)"
         >
           &#8592;
@@ -298,10 +290,9 @@ export default function FlashcardDeck({
         <button
           onClick={goForward}
           disabled={!hasAnswerForCurrent || currentIndex >= questions.length - 1}
-          className={`px-4 py-3 font-medium rounded-lg transition-colors ${
+          className={`px-4 py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors ${
             !hasAnswerForCurrent || currentIndex >= questions.length - 1 ? 'opacity-30 cursor-not-allowed' : ''
           }`}
-          style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
           title="Next card (→)"
         >
           &#8594;

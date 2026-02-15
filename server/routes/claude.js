@@ -1,7 +1,7 @@
 import express from 'express';
 import Anthropic from '@anthropic-ai/sdk';
 import crypto from 'crypto';
-import { getCached, setCache, getCacheIndex, getCachedGeneration } from '../dal/cache.js';
+import { getCached, setCache, getCacheIndex } from '../dal/cache.js';
 import {
   saveTestSession, saveTestReport, getReportsForProfile,
   getLearningProfile, updateLearningProfile
@@ -10,23 +10,48 @@ import { canAccessProfile } from '../middleware/auth.js';
 
 const router = express.Router();
 
-const rateLimiter = {
-  calls: 0,
-  resetTime: Date.now() + 3600000,
-  limit: 20
-};
+// Lazy singleton — created once on first API call, reused thereafter
+let anthropicClient = null;
+function getAnthropicClient() {
+  if (!anthropicClient) {
+    anthropicClient = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return anthropicClient;
+}
 
-function checkRateLimit() {
-  if (Date.now() > rateLimiter.resetTime) {
-    rateLimiter.calls = 0;
-    rateLimiter.resetTime = Date.now() + 3600000;
+// Per-profile rate limiting: each profile gets their own counter
+const RATE_LIMIT_PER_PROFILE = 10;
+const RATE_LIMIT_GLOBAL = 30;
+const RATE_LIMIT_WINDOW = 3600000; // 1 hour
+
+const profileLimits = new Map(); // profileId -> { calls, resetTime }
+let globalCalls = 0;
+let globalResetTime = Date.now() + RATE_LIMIT_WINDOW;
+
+function checkRateLimit(profileId) {
+  const now = Date.now();
+
+  // Reset global counter if window expired
+  if (now > globalResetTime) {
+    globalCalls = 0;
+    globalResetTime = now + RATE_LIMIT_WINDOW;
   }
 
-  if (rateLimiter.calls >= rateLimiter.limit) {
-    return false;
+  // Check global limit
+  if (globalCalls >= RATE_LIMIT_GLOBAL) return false;
+
+  // Per-profile limit
+  if (profileId) {
+    let entry = profileLimits.get(profileId);
+    if (!entry || now > entry.resetTime) {
+      entry = { calls: 0, resetTime: now + RATE_LIMIT_WINDOW };
+      profileLimits.set(profileId, entry);
+    }
+    if (entry.calls >= RATE_LIMIT_PER_PROFILE) return false;
+    entry.calls++;
   }
 
-  rateLimiter.calls++;
+  globalCalls++;
   return true;
 }
 
@@ -70,7 +95,7 @@ router.post('/generate', async (req, res) => {
       });
     }
 
-    if (!checkRateLimit()) {
+    if (!checkRateLimit(req.user?.profileId)) {
       return res.status(429).json({
         error: 'Rate limit exceeded',
         code: 'RATE_LIMIT',
@@ -78,9 +103,7 @@ router.post('/generate', async (req, res) => {
       });
     }
 
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY
-    });
+    const anthropic = getAnthropicClient();
 
     let systemPrompt;
 
@@ -250,7 +273,7 @@ router.post('/mark', async (req, res) => {
       });
     }
 
-    if (!checkRateLimit()) {
+    if (!checkRateLimit(req.user?.profileId)) {
       return res.status(429).json({
         error: 'Rate limit exceeded',
         code: 'RATE_LIMIT',
@@ -267,9 +290,7 @@ router.post('/mark', async (req, res) => {
       });
     }
 
-    const anthropic = new Anthropic({
-      apiKey: process.env.ANTHROPIC_API_KEY
-    });
+    const anthropic = getAnthropicClient();
 
     const systemPrompt = `You are a friendly, encouraging teacher marking a student's answer in a family revision app called RE-VISION.
 
@@ -314,7 +335,22 @@ Marking rules:
     let responseText = message.content[0].text;
     responseText = responseText.replace(/^```json\s*|\s*```$/g, '').trim();
 
-    const markingResult = JSON.parse(responseText);
+    let markingResult;
+    try {
+      markingResult = JSON.parse(responseText);
+    } catch (parseError) {
+      const retryMessage = await anthropic.messages.create({
+        model: 'claude-sonnet-4-5-20250929',
+        max_tokens: 1024,
+        temperature: 0.3,
+        system: systemPrompt + "\n\nIMPORTANT: Previous attempt failed to parse. Return ONLY valid JSON, no text before or after.",
+        messages: [{ role: 'user', content: 'Mark this answer now. Return only JSON, nothing else.' }]
+      });
+
+      responseText = retryMessage.content[0].text;
+      responseText = responseText.replace(/^```json\s*|\s*```$/g, '').trim();
+      markingResult = JSON.parse(responseText);
+    }
 
     res.json({
       success: true,
@@ -342,7 +378,7 @@ router.get('/generated', (req, res) => {
 router.get('/generated/:cacheKey', (req, res) => {
   try {
     const { cacheKey } = req.params;
-    const data = getCachedGeneration(cacheKey);
+    const data = getCached(cacheKey);
     if (!data) {
       return res.status(404).json({ error: 'Test not found' });
     }
@@ -362,7 +398,7 @@ router.post('/report', async (req, res) => {
       return res.status(400).json({ error: 'API key not configured', code: 'NO_API_KEY' });
     }
 
-    if (!checkRateLimit()) {
+    if (!checkRateLimit(req.user?.profileId)) {
       return res.status(429).json({
         error: 'Rate limit exceeded',
         code: 'RATE_LIMIT',
@@ -440,7 +476,7 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
   "encouragement": "age-appropriate motivational message"
 }`;
 
-    const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    const anthropic = getAnthropicClient();
 
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
@@ -483,7 +519,7 @@ router.get('/reports/:profileId', (req, res) => {
     if (!canAccessProfile(req.user, profileId)) {
       return res.status(403).json({ error: 'Access denied' });
     }
-    const limit = parseInt(req.query.limit) || 10;
+    const limit = Math.min(Math.max(parseInt(req.query.limit) || 10, 1), 50);
     const reports = getReportsForProfile(profileId, limit);
     res.json({ success: true, reports });
   } catch (error) {

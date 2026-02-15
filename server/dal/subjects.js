@@ -5,24 +5,37 @@ import db from '../db/index.js';
  * Returns the same shape as the old subjects.json: { subjects: [...] }
  */
 export function getAllSubjects() {
-  const subjects = db.prepare('SELECT * FROM subjects').all();
-  const themesStmt = db.prepare('SELECT * FROM themes WHERE subject_id = ?');
+  const rows = db.prepare(
+    `SELECT s.id, s.name, s.icon, s.description, s.age_group,
+            t.id as theme_id, t.name as theme_name, t.color as theme_color, t.question_file
+     FROM subjects s
+     LEFT JOIN themes t ON s.id = t.subject_id
+     ORDER BY s.id, t.id`
+  ).all();
 
-  return {
-    subjects: subjects.map(s => ({
-      id: s.id,
-      name: s.name,
-      icon: s.icon,
-      description: s.description,
-      ageGroup: s.age_group,
-      themes: themesStmt.all(s.id).map(t => ({
-        id: t.id,
-        name: t.name,
-        color: t.color,
-        questionFile: t.question_file
-      }))
-    }))
-  };
+  const subjectMap = new Map();
+  for (const row of rows) {
+    if (!subjectMap.has(row.id)) {
+      subjectMap.set(row.id, {
+        id: row.id,
+        name: row.name,
+        icon: row.icon,
+        description: row.description,
+        ageGroup: row.age_group,
+        themes: []
+      });
+    }
+    if (row.theme_id) {
+      subjectMap.get(row.id).themes.push({
+        id: row.theme_id,
+        name: row.theme_name,
+        color: row.theme_color,
+        questionFile: row.question_file
+      });
+    }
+  }
+
+  return { subjects: Array.from(subjectMap.values()) };
 }
 
 /**
@@ -256,6 +269,11 @@ export function importSubject(bundle) {
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
 
+  // Pre-load all existing question IDs for deduplication
+  const existingIds = new Set(
+    db.prepare('SELECT id FROM questions').all().map(r => r.id)
+  );
+
   const transaction = db.transaction(() => {
     let subjectId = bundle.subject.id;
 
@@ -286,6 +304,7 @@ export function importSubject(bundle) {
 
     // Insert question files
     let totalQuestions = 0;
+    let counter = existingIds.size + 1;
     for (const [filename, questionData] of Object.entries(bundle.questionFiles)) {
       // Find which theme this file belongs to
       const theme = bundle.subject.themes.find(t => t.questionFile === filename);
@@ -301,10 +320,14 @@ export function importSubject(bundle) {
         }
       }
 
-      // Insert questions
+      // Insert questions with incremental suffix deduplication
       if (questionData.questions) {
         for (const q of questionData.questions) {
-          const id = q.id.startsWith('imp-') ? q.id : `imp-${q.id}`;
+          let id = q.id;
+          while (existingIds.has(id)) {
+            id = `${subjectId.substring(0, 3)}-imp-${String(counter++).padStart(3, '0')}`;
+          }
+          existingIds.add(id);
           insertQuestion.run(
             id, subjectId, themeId,
             q.category, q.question, q.answer,

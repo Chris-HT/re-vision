@@ -7,23 +7,23 @@ export function useProgress(profileId) {
   const [dueInfo, setDueInfo] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const fetchProgress = useCallback(async () => {
+  const fetchProgress = useCallback(async (signal) => {
     if (!profileId) return;
     try {
-      const res = await apiFetch(`/api/progress/${profileId}`);
+      const res = await apiFetch(`/api/progress/${profileId}`, { signal });
       if (res.ok) setProgress(await res.json());
     } catch (err) {
-      console.error('Failed to fetch progress:', err);
+      if (err.name !== 'AbortError') console.error('Failed to fetch progress:', err);
     }
   }, [profileId]);
 
-  const fetchStats = useCallback(async () => {
+  const fetchStats = useCallback(async (signal) => {
     if (!profileId) return;
     try {
-      const res = await apiFetch(`/api/progress/${profileId}/stats`);
+      const res = await apiFetch(`/api/progress/${profileId}/stats`, { signal });
       if (res.ok) setStats(await res.json());
     } catch (err) {
-      console.error('Failed to fetch stats:', err);
+      if (err.name !== 'AbortError') console.error('Failed to fetch stats:', err);
     }
   }, [profileId]);
 
@@ -67,9 +67,11 @@ export function useProgress(profileId) {
       setLoading(false);
       return;
     }
+    const controller = new AbortController();
     setLoading(true);
-    Promise.all([fetchProgress(), fetchStats()])
+    Promise.all([fetchProgress(controller.signal), fetchStats(controller.signal)])
       .finally(() => setLoading(false));
+    return () => controller.abort();
   }, [profileId, fetchProgress, fetchStats]);
 
   return { progress, stats, dueInfo, loading, fetchDue, fetchStats, recordAnswer, fetchProgress };

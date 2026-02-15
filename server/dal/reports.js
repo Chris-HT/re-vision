@@ -50,30 +50,6 @@ export function getReportsForProfile(profileId, limit = 10) {
   }));
 }
 
-export function getReportBySessionId(sessionId) {
-  const row = db.prepare(
-    `SELECT r.id, r.session_id, r.report_data, r.generated_at,
-            s.topic, s.score, s.question_count, s.difficulty, s.format
-     FROM test_reports r
-     JOIN test_sessions s ON r.session_id = s.id
-     WHERE r.session_id = ?`
-  ).get(sessionId);
-
-  if (!row) return null;
-
-  return {
-    id: row.id,
-    sessionId: row.session_id,
-    report: JSON.parse(row.report_data),
-    generatedAt: row.generated_at,
-    topic: row.topic,
-    score: row.score,
-    questionCount: row.question_count,
-    difficulty: row.difficulty,
-    format: row.format
-  };
-}
-
 export function getLearningProfile(profileId) {
   let row = db.prepare(
     'SELECT * FROM learning_profiles WHERE profile_id = ?'
@@ -106,14 +82,14 @@ export function getLearningProfile(profileId) {
 export function updateLearningProfile(profileId, reportData, topic) {
   const current = getLearningProfile(profileId);
 
-  // Merge weak areas - keep most recent by area name
+  // Merge weak areas - keep most recent by area name (case-insensitive keys)
   const weakMap = new Map();
   for (const area of current.weakAreas) {
-    weakMap.set(area.area, area);
+    weakMap.set(area.area.toLowerCase(), area);
   }
   if (reportData.weakAreas) {
     for (const area of reportData.weakAreas) {
-      weakMap.set(area.area, {
+      weakMap.set(area.area.toLowerCase(), {
         area: area.area,
         reason: area.reason,
         suggestion: area.suggestion,
@@ -134,13 +110,13 @@ export function updateLearningProfile(profileId, reportData, topic) {
     }
   }
 
-  // Merge strong areas
+  // Merge strong areas (case-insensitive keys)
   const strongMap = new Map();
   for (const area of current.strongAreas) {
-    strongMap.set(area.area, area);
+    strongMap.set(area.area.toLowerCase(), area);
   }
   for (const s of strongSet) {
-    strongMap.set(s, {
+    strongMap.set(s.toLowerCase(), {
       area: s,
       lastTested: new Date().toISOString()
     });

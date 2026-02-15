@@ -13,20 +13,29 @@ export function getProgress(profileId) {
     'SELECT * FROM card_progress WHERE profile_id = ?'
   ).all(profileId);
 
-  const historyStmt = db.prepare(
-    'SELECT date, result FROM card_history WHERE profile_id = ? AND card_id = ? ORDER BY id DESC LIMIT 20'
-  );
+  // Batch-fetch all history for this profile in one query, then group by card_id
+  const allHistory = db.prepare(
+    `SELECT card_id, date, result FROM (
+       SELECT card_id, date, result, ROW_NUMBER() OVER (PARTITION BY card_id ORDER BY id DESC) as rn
+       FROM card_history WHERE profile_id = ?
+     ) WHERE rn <= 20`
+  ).all(profileId);
+
+  const historyByCard = new Map();
+  for (const h of allHistory) {
+    if (!historyByCard.has(h.card_id)) historyByCard.set(h.card_id, []);
+    historyByCard.get(h.card_id).push({ date: h.date, result: h.result });
+  }
 
   const cards = {};
   for (const c of cardRows) {
-    const history = historyStmt.all(profileId, c.card_id);
     cards[c.card_id] = {
       lastSeen: c.last_seen,
       nextDue: c.next_due,
       interval: c.interval,
       easeFactor: c.ease_factor,
       repetitions: c.repetitions,
-      history
+      history: historyByCard.get(c.card_id) || []
     };
   }
 
@@ -37,8 +46,9 @@ export function getProgress(profileId) {
 
 /**
  * Record a card review (replaces PUT /progress/:profileId/card/:cardId).
+ * Wrapped in a transaction to prevent data corruption from concurrent requests.
  */
-export function recordCardReview(profileId, cardId, result) {
+export const recordCardReview = db.transaction((profileId, cardId, result) => {
   ensureProfileStats(profileId);
 
   // Get or create card
@@ -114,7 +124,7 @@ export function recordCardReview(profileId, cardId, result) {
     stats.lastSessionDate, profileId);
 
   return { card, stats };
-}
+});
 
 /**
  * Get cards due for review.
@@ -122,40 +132,39 @@ export function recordCardReview(profileId, cardId, result) {
 export function getDueCards(profileId, themeList, maxCards) {
   const now = new Date().toISOString();
 
-  // Get all question IDs, optionally filtered by themes
-  let questionIds;
+  // Use SQL-level filtering instead of loading all questions into memory
+  let themeFilter = '';
+  let themeParams = [];
   if (themeList) {
     const placeholders = themeList.map(() => '?').join(',');
-    questionIds = db.prepare(
-      `SELECT id FROM questions WHERE theme_id IN (${placeholders})`
-    ).all(...themeList).map(r => r.id);
-  } else {
-    questionIds = db.prepare('SELECT id FROM questions').all().map(r => r.id);
+    themeFilter = `AND q.theme_id IN (${placeholders})`;
+    themeParams = themeList;
   }
 
-  const allQuestionIdSet = new Set(questionIds);
+  // Get due cards via JOIN — only cards that exist in questions and are overdue
+  const dueCards = db.prepare(
+    `SELECT cp.card_id as id, cp.next_due as nextDue
+     FROM card_progress cp
+     JOIN questions q ON cp.card_id = q.id
+     WHERE cp.profile_id = ? AND cp.last_seen IS NOT NULL AND cp.next_due <= ? ${themeFilter}
+     ORDER BY cp.next_due ASC`
+  ).all(profileId, now, ...themeParams);
 
-  // Get cards with progress data
-  const progressRows = db.prepare(
-    'SELECT card_id, next_due, last_seen FROM card_progress WHERE profile_id = ?'
-  ).all(profileId);
+  // Get seen card IDs (all cards with progress, not just due)
+  const seenCardIds = new Set(
+    db.prepare(
+      `SELECT cp.card_id FROM card_progress cp
+       JOIN questions q ON cp.card_id = q.id
+       WHERE cp.profile_id = ? ${themeFilter}`
+    ).all(profileId, ...themeParams).map(r => r.card_id)
+  );
 
-  const seenCardIds = new Set();
-  const dueCards = [];
-
-  for (const row of progressRows) {
-    if (!allQuestionIdSet.has(row.card_id)) continue;
-    seenCardIds.add(row.card_id);
-    if (row.last_seen && row.next_due && row.next_due <= now) {
-      dueCards.push({ id: row.card_id, nextDue: row.next_due });
-    }
-  }
-
-  // Unseen cards
-  const unseenCards = questionIds.filter(id => !seenCardIds.has(id));
-
-  // Sort due cards by most overdue first
-  dueCards.sort((a, b) => a.nextDue.localeCompare(b.nextDue));
+  // Get unseen cards — questions with no progress entry
+  const unseenCards = db.prepare(
+    `SELECT q.id FROM questions q
+     WHERE q.id NOT IN (SELECT card_id FROM card_progress WHERE profile_id = ?)
+     ${themeFilter ? themeFilter.replace('q.theme_id', 'q.theme_id') : ''}`
+  ).all(profileId, ...themeParams).map(r => r.id);
 
   const dueIds = dueCards.map(c => c.id).slice(0, maxCards);
   const unseenIds = unseenCards.slice(0, Math.max(0, maxCards - dueIds.length));

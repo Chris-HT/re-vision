@@ -34,12 +34,13 @@ export default function Home({ profile, setProfile }) {
   }, []);
 
   useEffect(() => {
-    if (profile) {
-      apiFetch(`/api/progress/${profile.id}/stats`)
-        .then(res => res.json())
-        .then(data => setStats(data))
-        .catch(() => setStats(null));
-    }
+    if (!profile) return;
+    const controller = new AbortController();
+    apiFetch(`/api/progress/${profile.id}/stats`, { signal: controller.signal })
+      .then(res => res.json())
+      .then(data => setStats(data))
+      .catch((err) => { if (err.name !== 'AbortError') setStats(null); });
+    return () => controller.abort();
   }, [profile]);
 
   const handleSelectMode = (mode) => {

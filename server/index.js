@@ -4,13 +4,14 @@ import dotenv from 'dotenv';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
-import './db/index.js';
+import db from './db/index.js';
 import authRoutes from './routes/auth.js';
 import questionRoutes from './routes/questions.js';
 import claudeRoutes from './routes/claude.js';
 import progressRoutes from './routes/progress.js';
 import { authenticate } from './middleware/auth.js';
 import errorHandler from './middleware/errorHandler.js';
+import { evictStaleCache } from './dal/cache.js';
 
 dotenv.config({ path: path.join(process.cwd(), '..', '.env') });
 
@@ -25,8 +26,15 @@ app.use(express.json());
 
 // Unauthenticated routes
 app.get('/api/health', (req, res) => {
+  let dbOk = false;
+  try {
+    db.prepare('SELECT 1').get();
+    dbOk = true;
+  } catch { /* DB not accessible */ }
+
   res.json({
-    status: 'ok',
+    status: dbOk ? 'ok' : 'degraded',
+    database: dbOk,
     claudeApiConfigured: !!process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== 'sk-ant-your-key-here'
   });
 });
@@ -48,6 +56,12 @@ if (process.env.NODE_ENV === 'production') {
 
 app.use(errorHandler);
 
+// Evict stale cache entries on startup (older than 30 days)
+try {
+  const evicted = evictStaleCache(30);
+  if (evicted > 0) console.log(`Evicted ${evicted} stale cache entries`);
+} catch { /* non-critical */ }
+
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🧠 RE-VISION running at:');
   console.log(`   Local:   http://localhost:${PORT}`);
@@ -62,3 +76,16 @@ const server = app.listen(PORT, '0.0.0.0', () => {
   });
   console.log('');
 });
+
+// Graceful shutdown — close server and DB cleanly
+function shutdown() {
+  console.log('\nShutting down gracefully...');
+  server.close(() => {
+    try { db.close(); } catch { /* already closed */ }
+    process.exit(0);
+  });
+  // Force exit after 5s if graceful shutdown stalls
+  setTimeout(() => process.exit(1), 5000);
+}
+process.on('SIGTERM', shutdown);
+process.on('SIGINT', shutdown);

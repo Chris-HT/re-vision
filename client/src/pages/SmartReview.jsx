@@ -34,14 +34,11 @@ export default function SmartReview({ profile }) {
       const subjectsRes = await apiFetch('/api/subjects');
       const subjectsData = await subjectsRes.json();
 
-      const allData = await Promise.all(
-        subjectsData.subjects.map(s =>
-          apiFetch(`/api/subjects/${s.id}/questions`).then(r => r.json())
-        )
-      );
       let questions = [];
       let cats = {};
-      for (const questionsData of allData) {
+      for (const subject of subjectsData.subjects) {
+        const questionsRes = await apiFetch(`/api/subjects/${subject.id}/questions`);
+        const questionsData = await questionsRes.json();
         questions = questions.concat(questionsData.questions);
         cats = { ...cats, ...questionsData.categories };
       }
@@ -125,8 +122,8 @@ export default function SmartReview({ profile }) {
 
   if (loading || !allQuestions.length) {
     return (
-      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
-        <div className="text-xl" style={{ color: 'var(--text-primary)' }}>Loading Smart Review...</div>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
+        <div className="text-white text-xl">Loading Smart Review...</div>
       </div>
     );
   }
@@ -137,10 +134,10 @@ export default function SmartReview({ profile }) {
     const score = total > 0 ? Math.round((sessionResults.correct.length / total) * 100) : 0;
 
     return (
-      <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 py-8">
         <div className="max-w-4xl mx-auto p-6">
           {/* Mini stats bar */}
-          <div className="rounded-lg p-4 mb-6 flex items-center justify-center space-x-6 text-sm" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
+          <div className="bg-slate-800 rounded-lg p-4 mb-6 flex items-center justify-center space-x-6 text-sm">
             {stats?.currentStreak > 0 && (
               <span className="text-orange-400 font-medium">
                 {stats.currentStreak} day streak
@@ -149,25 +146,25 @@ export default function SmartReview({ profile }) {
             <span className="text-blue-400">{stats?.totalCardsStudied || 0} cards studied all-time</span>
           </div>
 
-          <div className="rounded-xl p-8 mb-6" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
-            <h2 className="text-3xl font-bold mb-6" style={{ color: 'var(--text-primary)' }}>Smart Review Complete!</h2>
+          <div className="bg-slate-800 rounded-xl p-8 mb-6">
+            <h2 className="text-3xl font-bold text-white mb-6">Smart Review Complete!</h2>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-              <div className="rounded-lg p-4 text-center" style={{ backgroundColor: 'var(--bg-input)' }}>
+              <div className="bg-slate-700 rounded-lg p-4 text-center">
                 <div className="text-4xl font-bold text-blue-400">{score}%</div>
-                <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Score</div>
+                <div className="text-sm text-slate-400 mt-1">Score</div>
               </div>
-              <div className="rounded-lg p-4 text-center" style={{ backgroundColor: 'var(--bg-input)' }}>
+              <div className="bg-slate-700 rounded-lg p-4 text-center">
                 <div className="text-3xl font-bold text-green-400">{sessionResults.correct.length}</div>
-                <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Correct</div>
+                <div className="text-sm text-slate-400 mt-1">Correct</div>
               </div>
-              <div className="rounded-lg p-4 text-center" style={{ backgroundColor: 'var(--bg-input)' }}>
+              <div className="bg-slate-700 rounded-lg p-4 text-center">
                 <div className="text-3xl font-bold text-red-400">{sessionResults.missed.length}</div>
-                <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Missed</div>
+                <div className="text-sm text-slate-400 mt-1">Missed</div>
               </div>
-              <div className="rounded-lg p-4 text-center" style={{ backgroundColor: 'var(--bg-input)' }}>
-                <div className="text-3xl font-bold" style={{ color: 'var(--text-secondary)' }}>{sessionResults.skipped.length}</div>
-                <div className="text-sm mt-1" style={{ color: 'var(--text-secondary)' }}>Skipped</div>
+              <div className="bg-slate-700 rounded-lg p-4 text-center">
+                <div className="text-3xl font-bold text-slate-400">{sessionResults.skipped.length}</div>
+                <div className="text-sm text-slate-400 mt-1">Skipped</div>
               </div>
             </div>
           </div>
@@ -196,10 +193,10 @@ export default function SmartReview({ profile }) {
   // Active study session
   if (sessionQuestions) {
     return (
-      <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 py-8">
         {/* Mini stats bar */}
         <div className="max-w-4xl mx-auto px-6 mb-4">
-          <div className="rounded-lg p-3 flex items-center justify-center space-x-6 text-sm" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
+          <div className="bg-slate-800 rounded-lg p-3 flex items-center justify-center space-x-6 text-sm">
             {stats?.currentStreak > 0 && (
               <span className="text-orange-400 font-medium">
                 {stats.currentStreak} day streak
@@ -226,16 +223,16 @@ export default function SmartReview({ profile }) {
 
   // Landing / all caught up
   return (
-    <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 py-8">
       <div className="container mx-auto px-4">
         <div className="max-w-2xl mx-auto">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Smart Review</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>AI-powered spaced repetition</p>
+            <h1 className="text-3xl font-bold text-white mb-2">Smart Review</h1>
+            <p className="text-slate-300">AI-powered spaced repetition</p>
           </div>
 
           {/* Stats bar */}
-          <div className="rounded-lg p-4 mb-8 flex items-center justify-center space-x-6" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
+          <div className="bg-slate-800 rounded-lg p-4 mb-8 flex items-center justify-center space-x-6">
             {stats?.currentStreak > 0 && (
               <span className="text-orange-400 font-medium text-lg">
                 {stats.currentStreak} day streak
@@ -247,14 +244,14 @@ export default function SmartReview({ profile }) {
                 <span className="text-green-400">{dueInfo.totalUnseen} new cards</span>
               </>
             )}
-            <span style={{ color: 'var(--text-secondary)' }}>{stats?.totalCardsStudied || 0} studied all-time</span>
+            <span className="text-slate-400">{stats?.totalCardsStudied || 0} studied all-time</span>
           </div>
 
           {allCaughtUp ? (
-            <div className="rounded-xl p-8 text-center mb-6" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
+            <div className="bg-slate-800 rounded-xl p-8 text-center mb-6">
               <div className="text-5xl mb-4">&#127881;</div>
-              <h2 className="text-2xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>You're all caught up!</h2>
-              <p className="mb-6" style={{ color: 'var(--text-secondary)' }}>Come back tomorrow for more review cards.</p>
+              <h2 className="text-2xl font-bold text-white mb-2">You're all caught up!</h2>
+              <p className="text-slate-300 mb-6">Come back tomorrow for more review cards.</p>
 
               <div className="flex justify-center space-x-4">
                 {dueInfo?.totalUnseen > 0 && (
@@ -278,14 +275,13 @@ export default function SmartReview({ profile }) {
               {dueInfo && dueInfo.totalDue > 0 && (
                 <button
                   onClick={startDueReview}
-                  className="w-full group relative overflow-hidden rounded-xl p-8 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl border text-left"
-                  style={{ backgroundColor: 'var(--bg-card-solid)', borderColor: 'var(--border-color)' }}
+                  className="w-full group relative overflow-hidden bg-slate-800 hover:bg-slate-700 rounded-xl p-8 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl border border-slate-700 text-left"
                 >
                   <div className="flex items-center space-x-4">
                     <span className="text-4xl">&#129504;</span>
                     <div>
-                      <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Start Review</h3>
-                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      <h3 className="text-xl font-bold text-white">Start Review</h3>
+                      <p className="text-sm text-slate-300">
                         {dueInfo.totalDue} due cards + {dueInfo.totalUnseen} new cards ready
                       </p>
                     </div>
@@ -297,14 +293,13 @@ export default function SmartReview({ profile }) {
               {dueInfo && dueInfo.totalDue === 0 && dueInfo.totalUnseen > 0 && (
                 <button
                   onClick={startUnseenOnly}
-                  className="w-full group relative overflow-hidden rounded-xl p-8 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl border text-left"
-                  style={{ backgroundColor: 'var(--bg-card-solid)', borderColor: 'var(--border-color)' }}
+                  className="w-full group relative overflow-hidden bg-slate-800 hover:bg-slate-700 rounded-xl p-8 transition-all duration-300 transform hover:scale-[1.02] hover:shadow-xl border border-slate-700 text-left"
                 >
                   <div className="flex items-center space-x-4">
                     <span className="text-4xl">&#127793;</span>
                     <div>
-                      <h3 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>Learn New Cards</h3>
-                      <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                      <h3 className="text-xl font-bold text-white">Learn New Cards</h3>
+                      <p className="text-sm text-slate-300">
                         {dueInfo.totalUnseen} unseen cards to study
                       </p>
                     </div>
@@ -315,14 +310,13 @@ export default function SmartReview({ profile }) {
 
               <button
                 onClick={startExtraPractice}
-                className="w-full group relative overflow-hidden rounded-xl p-6 transition-all duration-300 border text-left"
-                style={{ backgroundColor: 'var(--bg-card-solid)', borderColor: 'var(--border-color)' }}
+                className="w-full group relative overflow-hidden bg-slate-800 hover:bg-slate-700 rounded-xl p-6 transition-all duration-300 border border-slate-700 text-left"
               >
                 <div className="flex items-center space-x-4">
                   <span className="text-3xl">&#128170;</span>
                   <div>
-                    <h3 className="text-lg font-bold" style={{ color: 'var(--text-primary)' }}>Extra Practice</h3>
-                    <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>Random selection of 20 cards</p>
+                    <h3 className="text-lg font-bold text-white">Extra Practice</h3>
+                    <p className="text-sm text-slate-300">Random selection of 20 cards</p>
                   </div>
                 </div>
               </button>
