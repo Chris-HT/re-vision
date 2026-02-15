@@ -203,7 +203,7 @@ router.post('/change-pin', authenticate, async (req, res, next) => {
 // GET /api/auth/children — get linked children (admin/parent only)
 router.get('/children', authenticate, requireRole('admin', 'parent'), (req, res, next) => {
   try {
-    const children = getChildren(req.user.profileId);
+    const children = getChildren(req.user.profileId, req.user.role);
     res.json({ children });
   } catch (error) {
     next(error);

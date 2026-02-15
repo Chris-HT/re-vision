@@ -259,10 +259,14 @@ export function importSubject(bundle) {
   const transaction = db.transaction(() => {
     let subjectId = bundle.subject.id;
 
-    // Handle ID collision
-    const existing = db.prepare('SELECT id FROM subjects WHERE id = ?').get(subjectId);
+    // Handle ID collision — find a unique ID
+    let existing = db.prepare('SELECT id FROM subjects WHERE id = ?').get(subjectId);
     if (existing) {
-      subjectId = `imp-${subjectId}`;
+      let suffix = 2;
+      while (db.prepare('SELECT id FROM subjects WHERE id = ?').get(`${subjectId}-${suffix}`)) {
+        suffix++;
+      }
+      subjectId = `${subjectId}-${suffix}`;
       bundle.subject.id = subjectId;
       bundle.subject.name = `${bundle.subject.name} (Imported)`;
     }

@@ -7,14 +7,14 @@ export function saveTestSession(id, profileId, testData, answers, score) {
   ).run(
     id,
     profileId,
-    testData.meta.topic,
-    testData.meta.ageGroup,
-    testData.meta.difficulty,
-    testData.meta.format || 'mix',
-    testData.questions.length,
+    testData.meta?.topic || 'Unknown',
+    testData.meta?.ageGroup || 'adult',
+    testData.meta?.difficulty || 'medium',
+    testData.meta?.format || 'mix',
+    testData.questions?.length || 0,
     score,
     new Date().toISOString(),
-    JSON.stringify(testData.questions),
+    JSON.stringify(testData.questions || []),
     JSON.stringify(answers)
   );
 }
@@ -122,12 +122,15 @@ export function updateLearningProfile(profileId, reportData, topic) {
     }
   }
 
-  // Remove from weak areas if now in strengths
+  // Remove from weak areas if now in strengths (case-insensitive)
   const strongSet = new Set();
   if (reportData.strengths) {
     for (const s of reportData.strengths) {
       strongSet.add(s);
-      weakMap.delete(s);
+      const sLower = s.toLowerCase();
+      for (const key of weakMap.keys()) {
+        if (key.toLowerCase() === sLower) weakMap.delete(key);
+      }
     }
   }
 

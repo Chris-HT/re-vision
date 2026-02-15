@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import ResultsScreen from '../components/ResultsScreen';
 
@@ -6,10 +7,11 @@ export default function Results() {
   const navigate = useNavigate();
   const { results, categories } = location.state || {};
 
-  if (!results) {
-    navigate('/flashcards');
-    return null;
-  }
+  useEffect(() => {
+    if (!results) navigate('/flashcards');
+  }, [results, navigate]);
+
+  if (!results) return null;
 
   const handleRestart = () => {
     navigate('/flashcards');

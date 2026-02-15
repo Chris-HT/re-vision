@@ -3,7 +3,8 @@
  */
 
 function toDateString(isoString) {
-  return new Date(isoString).toISOString().split('T')[0];
+  const d = new Date(isoString);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
 
 function daysBetween(dateA, dateB) {
@@ -21,7 +22,8 @@ function daysBetween(dateA, dateB) {
 export function updateStats(stats, isNewSession) {
   const today = toDateString(new Date().toISOString());
 
-  stats.totalCardsStudied = (stats.totalCardsStudied || 0) + 1;
+  stats.totalCardReviews = (stats.totalCardReviews || stats.totalCardsStudied || 0) + 1;
+  stats.totalCardsStudied = stats.totalCardReviews; // backward compat
 
   if (isNewSession) {
     stats.totalSessions = (stats.totalSessions || 0) + 1;

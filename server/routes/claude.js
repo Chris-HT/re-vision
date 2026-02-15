@@ -40,14 +40,6 @@ router.post('/generate', async (req, res) => {
       });
     }
 
-    if (!checkRateLimit()) {
-      return res.status(429).json({
-        error: 'Rate limit exceeded',
-        code: 'RATE_LIMIT',
-        userMessage: "You've been busy! Try again in a bit."
-      });
-    }
-
     const { topic, ageGroup, difficulty, count, format, additionalContext } = req.body;
 
     if (!topic || !ageGroup || !difficulty || !count || !format) {
@@ -68,13 +60,21 @@ router.post('/generate', async (req, res) => {
       .update(`${topic}-${ageGroup}-${difficulty}-${count}-${format}`.toLowerCase())
       .digest('hex');
 
-    // Check cache
+    // Check cache first — don't count cached requests against rate limit
     const cached = getCached(cacheKey);
     if (cached) {
       return res.json({
         success: true,
         cached: true,
         ...cached
+      });
+    }
+
+    if (!checkRateLimit()) {
+      return res.status(429).json({
+        error: 'Rate limit exceeded',
+        code: 'RATE_LIMIT',
+        userMessage: "You've been busy! Try again in a bit."
       });
     }
 
@@ -233,7 +233,7 @@ Rules:
     console.error('Generation error:', error);
     res.status(500).json({
       error: 'Failed to generate questions',
-      details: error.message,
+      details: process.env.NODE_ENV !== 'production' ? error.message : undefined,
       code: 'API_ERROR',
       userMessage: 'Something went wrong. Try again?'
     });
@@ -324,7 +324,7 @@ Marking rules:
     console.error('Marking error:', error);
     res.status(500).json({
       error: 'Failed to mark answer',
-      details: error.message,
+      details: process.env.NODE_ENV !== 'production' ? error.message : undefined,
       code: 'API_ERROR',
       userMessage: 'Something went wrong. Try again?'
     });
@@ -376,9 +376,19 @@ router.post('/report', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields', code: 'INVALID_REQUEST' });
     }
 
+    // Profile access check
+    if (!canAccessProfile(req.user, profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+
+    // Guard against empty/invalid answers
+    if (!Array.isArray(answers) || answers.length === 0) {
+      return res.status(400).json({ error: 'Answers array is empty', code: 'INVALID_REQUEST' });
+    }
+
     const ageGroup = testData.meta?.ageGroup || 'adult';
     const topic = testData.meta?.topic || 'General';
-    const totalScore = Math.round(answers.reduce((sum, a) => sum + a.score, 0) / answers.length);
+    const totalScore = answers.length > 0 ? Math.round(answers.reduce((sum, a) => sum + (a?.score || 0), 0) / answers.length) : 0;
 
     // Fetch existing learning profile for context
     const learningProfile = getLearningProfile(profileId);
@@ -386,6 +396,7 @@ router.post('/report', async (req, res) => {
     // Build question-by-question breakdown for the prompt
     const breakdown = testData.questions.map((q, i) => {
       const a = answers[i];
+      if (!a) return `Q${i + 1}: "${q.question}" | Skipped`;
       return `Q${i + 1}: "${q.question}" | Score: ${a.score}% | Correct: ${a.isCorrect}${a.keyPointsMissed?.length ? ` | Missed: ${a.keyPointsMissed.join(', ')}` : ''}`;
     }).join('\n');
 
@@ -459,7 +470,7 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
     console.error('Report generation error:', error);
     res.status(500).json({
       error: 'Failed to generate report',
-      details: error.message,
+      details: process.env.NODE_ENV !== 'production' ? error.message : undefined,
       code: 'API_ERROR',
       userMessage: 'Something went wrong generating the report. Try again?'
     });

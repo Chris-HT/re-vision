@@ -30,7 +30,7 @@ export default function ConfigPanel({
       categories: selectedCategories,
       difficulty: selectedDifficulty
     });
-  }, [selectedSubject, selectedTheme, selectedCategories, selectedDifficulty]);
+  }, [selectedSubject, selectedTheme, selectedCategories, selectedDifficulty, onConfigChange]);
 
   const toggleCategory = (category) => {
     setSelectedCategories(prev => 

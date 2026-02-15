@@ -15,6 +15,7 @@ export default function DynamicTest({ profile }) {
   const [previousTests, setPreviousTests] = useState([]);
   const [apiConfigured, setApiConfigured] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showQuitConfirm, setShowQuitConfirm] = useState(false);
 
   useEffect(() => {
     if (!profile) {
@@ -99,20 +100,20 @@ export default function DynamicTest({ profile }) {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 flex items-center justify-center">
-        <div className="text-white text-xl">Loading...</div>
+      <div className="min-h-screen flex items-center justify-center" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
+        <div className="text-xl" style={{ color: 'var(--text-primary)' }}>Loading...</div>
       </div>
     );
   }
 
   if (!apiConfigured) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 py-8">
+      <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
         <div className="container mx-auto px-4">
           <div className="max-w-2xl mx-auto">
             <div className="mb-8">
-              <h1 className="text-3xl font-bold text-white mb-2">Dynamic Test Generation</h1>
-              <p className="text-slate-300">AI-powered custom questions tailored to your needs</p>
+              <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Dynamic Test Generation</h1>
+              <p style={{ color: 'var(--text-secondary)' }}>AI-powered custom questions tailored to your needs</p>
             </div>
 
             <div className="bg-amber-900/50 border border-amber-600 rounded-lg p-6">
@@ -124,8 +125,8 @@ export default function DynamicTest({ profile }) {
                     To use Dynamic Test mode, you need to configure your Anthropic API key.
                   </p>
                   <ol className="space-y-2 text-sm text-amber-100">
-                    <li>1. Open the <code className="bg-slate-800 px-2 py-1 rounded">.env</code> file in the project root</li>
-                    <li>2. Replace <code className="bg-slate-800 px-2 py-1 rounded">sk-ant-your-key-here</code> with your actual API key</li>
+                    <li>1. Open the <code className="px-2 py-1 rounded" style={{ backgroundColor: 'var(--bg-card-solid)' }}>.env</code> file in the project root</li>
+                    <li>2. Replace <code className="px-2 py-1 rounded" style={{ backgroundColor: 'var(--bg-card-solid)' }}>sk-ant-your-key-here</code> with your actual API key</li>
                     <li>3. Restart the server</li>
                     <li>4. Get your API key from <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer" className="text-blue-300 hover:text-blue-200 underline">console.anthropic.com</a></li>
                   </ol>
@@ -139,13 +140,13 @@ export default function DynamicTest({ profile }) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 to-slate-800 py-8">
+    <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
       <div className="container mx-auto px-4">
         {testState === 'config' && (
           <>
             <div className="mb-8 max-w-2xl mx-auto">
-              <h1 className="text-3xl font-bold text-white mb-2">Dynamic Test Generation</h1>
-              <p className="text-slate-300">AI-powered custom questions tailored to your needs</p>
+              <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Dynamic Test Generation</h1>
+              <p style={{ color: 'var(--text-secondary)' }}>AI-powered custom questions tailored to your needs</p>
             </div>
             <TestConfig
               profile={profile}
@@ -157,6 +158,39 @@ export default function DynamicTest({ profile }) {
 
         {testState === 'testing' && testData && (
           <>
+            <div className="max-w-3xl mx-auto mb-4 flex justify-between items-center">
+              <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
+                Question {currentQuestionIndex + 1} of {testData.questions.length}
+              </p>
+              <button
+                onClick={() => setShowQuitConfirm(true)}
+                className="px-3 py-1.5 text-sm text-red-400 hover:text-red-300 border border-red-800 hover:border-red-600 rounded-lg transition-colors"
+              >
+                Quit Test
+              </button>
+            </div>
+
+            {showQuitConfirm && (
+              <div className="max-w-3xl mx-auto mb-4 bg-red-900/40 border border-red-600 rounded-lg p-4 flex items-center justify-between">
+                <p className="text-red-200 text-sm">Are you sure you want to quit? Your progress will be lost.</p>
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => setShowQuitConfirm(false)}
+                    className="px-3 py-1.5 text-sm rounded-lg transition-colors"
+                    style={{ backgroundColor: 'var(--bg-input)', color: 'var(--text-primary)' }}
+                  >
+                    Continue Test
+                  </button>
+                  <button
+                    onClick={handleNewTest}
+                    className="px-3 py-1.5 text-sm bg-red-600 hover:bg-red-500 text-white rounded-lg transition-colors"
+                  >
+                    Quit
+                  </button>
+                </div>
+              </div>
+            )}
+
             {currentQuestionIndex < testData.questions.length && (
               <TestQuestion
                 key={currentQuestionIndex}

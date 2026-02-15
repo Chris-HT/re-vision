@@ -64,7 +64,7 @@ export default function PinInput({ length = 4, onComplete, error, disabled }) {
           <input
             key={i}
             ref={el => inputRefs.current[i] = el}
-            type="text"
+            type="password"
             inputMode="numeric"
             maxLength={1}
             value={digit}
