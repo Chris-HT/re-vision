@@ -145,3 +145,11 @@ CREATE TABLE IF NOT EXISTS learning_profiles (
   updated_at TEXT NOT NULL,
   FOREIGN KEY (profile_id) REFERENCES profiles(id)
 );
+
+CREATE TABLE IF NOT EXISTS parent_child (
+  parent_id TEXT NOT NULL,
+  child_id TEXT NOT NULL,
+  PRIMARY KEY (parent_id, child_id),
+  FOREIGN KEY (parent_id) REFERENCES profiles(id),
+  FOREIGN KEY (child_id) REFERENCES profiles(id)
+);

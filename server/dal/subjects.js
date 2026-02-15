@@ -121,9 +121,10 @@ export function saveGeneratedQuestions({ subjectId, themeId, questions, subjectM
     `INSERT OR IGNORE INTO questions (id, subject_id, theme_id, category, question, answer, difficulty, tags, format, options, correct_option)
      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
   );
+  // Check all question IDs globally to prevent cross-theme collisions
   const existingIds = new Set(
-    db.prepare('SELECT id FROM questions WHERE subject_id = ? AND theme_id = ?')
-      .all(subjectId, themeId)
+    db.prepare('SELECT id FROM questions')
+      .all()
       .map(r => r.id)
   );
 
@@ -218,20 +219,19 @@ export function exportSubject(subjectId) {
   };
 
   // Group questions by theme and reconstruct question file format
+  // Include all themes even if they have no questions, to preserve metadata
   for (const theme of subject.themes) {
     const questionsData = getQuestions(subjectId, theme.id);
-    if (questionsData && questionsData.questions.length > 0) {
-      bundle.questionFiles[theme.questionFile] = {
-        meta: {
-          subject: subjectId,
-          theme: theme.id,
-          version: 1,
-          lastUpdated: new Date().toISOString().split('T')[0]
-        },
-        categories: questionsData.categories,
-        questions: questionsData.questions
-      };
-    }
+    bundle.questionFiles[theme.questionFile] = {
+      meta: {
+        subject: subjectId,
+        theme: theme.id,
+        version: 1,
+        lastUpdated: new Date().toISOString().split('T')[0]
+      },
+      categories: questionsData ? questionsData.categories : {},
+      questions: questionsData ? questionsData.questions : []
+    };
   }
 
   return bundle;

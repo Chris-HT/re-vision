@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../utils/api';
 import ConfigPanel from '../components/ConfigPanel';
 import FlashcardDeck from '../components/FlashcardDeck';
 import ResultsScreen from '../components/ResultsScreen';
@@ -24,7 +25,7 @@ export default function Flashcards({ profile }) {
 
   const fetchSubjects = async () => {
     try {
-      const response = await fetch('/api/subjects');
+      const response = await apiFetch('/api/subjects');
       const data = await response.json();
       setSubjects(data.subjects);
       return data.subjects;

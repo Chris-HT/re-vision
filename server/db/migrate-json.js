@@ -88,11 +88,18 @@ function migrate() {
             }
           }
 
-          // Questions
+          // Questions — check for global ID collisions and prefix if needed
           if (questionData.questions) {
             for (const q of questionData.questions) {
+              let id = q.id;
+              const existing = db.prepare('SELECT id, subject_id, theme_id FROM questions WHERE id = ?').get(id);
+              if (existing && (existing.subject_id !== subject.id || existing.theme_id !== theme.id)) {
+                const newId = `${subject.id}-${theme.id}-${id}`;
+                console.log(`  Warning: Question ID "${id}" collides across themes, remapped to "${newId}"`);
+                id = newId;
+              }
               insertQuestion.run(
-                q.id, subject.id, theme.id,
+                id, subject.id, theme.id,
                 q.category, q.question, q.answer,
                 q.difficulty || 1,
                 q.tags ? JSON.stringify(q.tags) : null,
@@ -122,7 +129,7 @@ function migrate() {
        VALUES (?, ?, ?, ?, ?, ?, ?)`
     );
     const insertHistory = db.prepare(
-      `INSERT INTO card_history (profile_id, card_id, date, result) VALUES (?, ?, ?, ?)`
+      `INSERT OR IGNORE INTO card_history (profile_id, card_id, date, result) VALUES (?, ?, ?, ?)`
     );
     const insertStats = db.prepare(
       `INSERT OR IGNORE INTO profile_stats (profile_id, total_sessions, total_cards_studied, current_streak, longest_streak, last_session_date)
@@ -149,9 +156,11 @@ function migrate() {
             );
             totalCards++;
 
-            // Import history entries (they come newest-first, insert in that order)
+            // Import history entries — reverse from newest-first to oldest-first
+            // so that autoincrement IDs align with ORDER BY id DESC (newest first)
             if (card.history) {
-              for (const entry of card.history) {
+              const entries = [...card.history].reverse();
+              for (const entry of entries) {
                 insertHistory.run(profileId, cardId, entry.date, entry.result);
                 totalHistoryEntries++;
               }
@@ -208,6 +217,19 @@ function migrate() {
     transaction();
     console.log(`  Cache: ${cached} generated question sets imported`);
   }
+
+  // ── 5. Roles and parent-child links ──────────────────────
+  console.log('\n  Setting roles and parent-child links...');
+  db.prepare("UPDATE profiles SET role = 'admin' WHERE id = 'dad'").run();
+  db.prepare("UPDATE profiles SET role = 'child' WHERE id IN ('child1', 'child2')").run();
+
+  const insertLink = db.prepare(
+    'INSERT OR IGNORE INTO parent_child (parent_id, child_id) VALUES (?, ?)'
+  );
+  insertLink.run('dad', 'child1');
+  insertLink.run('dad', 'child2');
+  console.log('  Roles: dad=admin, child1=child, child2=child');
+  console.log('  Parent-child links: dad→child1, dad→child2');
 
   console.log('\nMigration complete! JSON files preserved as backup.');
 }

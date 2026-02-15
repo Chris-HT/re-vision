@@ -63,6 +63,7 @@ function toProfile(row) {
     defaultSubjects: row.default_subjects ? JSON.parse(row.default_subjects) : [],
     ageGroup: row.age_group,
     theme: row.theme,
+    role: row.role || 'child',
     favourites: row.favourites ? JSON.parse(row.favourites) : []
   };
 }

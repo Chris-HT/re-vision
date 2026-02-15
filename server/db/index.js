@@ -25,4 +25,15 @@ db.pragma('foreign_keys = ON');
 const schema = fs.readFileSync(schemaPath, 'utf-8');
 db.exec(schema);
 
+// Add auth columns (safe to re-run — catches "duplicate column" errors)
+const alterStatements = [
+  'ALTER TABLE profiles ADD COLUMN pin_hash TEXT',
+  "ALTER TABLE profiles ADD COLUMN role TEXT NOT NULL DEFAULT 'child'"
+];
+for (const sql of alterStatements) {
+  try { db.exec(sql); } catch (e) {
+    if (!e.message.includes('duplicate column')) throw e;
+  }
+}
+
 export default db;

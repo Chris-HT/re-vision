@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiFetch } from '../utils/api';
 import StudyReport from './StudyReport';
 
 export default function TestResults({
@@ -37,9 +38,8 @@ export default function TestResults({
     setError(null);
 
     try {
-      const response = await fetch('/api/generate/save', {
+      const response = await apiFetch('/api/generate/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           subjectId: testData.meta.topic.toLowerCase().replace(/\s+/g, '-'),
           themeId: 'generated',
@@ -67,9 +67,8 @@ export default function TestResults({
     setReportError(null);
 
     try {
-      const response = await fetch('/api/report', {
+      const response = await apiFetch('/api/report', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           profileId: profile?.id,
           testData,

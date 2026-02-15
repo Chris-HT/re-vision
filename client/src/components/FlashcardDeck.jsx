@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { apiFetch } from '../utils/api';
 import Timer from './Timer';
 import { useTimer } from '../hooks/useTimer';
 
@@ -105,9 +106,8 @@ export default function FlashcardDeck({
     // Record progress if tracking is enabled
     if (trackProgress && profileId && currentCard.id) {
       const progressResult = type === 'correct' ? 'correct' : type === 'missed' ? 'incorrect' : 'skipped';
-      fetch(`/api/progress/${profileId}/card/${currentCard.id}`, {
+      apiFetch(`/api/progress/${profileId}/card/${currentCard.id}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ result: progressResult })
       }).catch(err => console.error('Failed to record progress:', err));
     }

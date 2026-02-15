@@ -13,6 +13,7 @@ RE-VISION is a locally-hosted flashcard and dynamic test platform for a family s
 - **Frontend**: React 18 + Vite, React Router, Tailwind CSS
 - **Backend**: Express.js (ES modules)
 - **Data Storage**: SQLite via better-sqlite3 (single file: `data/revision.db`, gitignored)
+- **Auth**: bcryptjs (PIN hashing), jsonwebtoken (JWT sessions)
 - **AI**: Anthropic Claude API (claude-sonnet-4-5-20250929) for dynamic test generation, auto-marking, and study report generation
 - **Runtime**: Node.js
 - **Production**: PM2 process manager on Raspberry Pi 3 / Zero 2W
@@ -44,7 +45,8 @@ npm run prod:logs    # View PM2 logs
 ```
 
 ### Environment Setup
-- Copy `.env.example` to `.env` and add your Anthropic API key
+- Copy `.env.example` to `.env` and add your Anthropic API key and JWT secret
+- Required variables: `ANTHROPIC_API_KEY`, `JWT_SECRET` (if unset, a random secret is generated per restart)
 - The `.env` file is located in the project root, not in the server directory
 - Server loads it via `dotenv.config({ path: path.join(process.cwd(), '..', '.env') })`
 
@@ -106,7 +108,8 @@ re-vision/
 
 All data is stored in SQLite (`data/revision.db`) with these tables:
 - **subjects** → **themes** → **questions** (with **categories** for styling)
-- **profiles** (user accounts)
+- **profiles** (user accounts with PIN auth and roles)
+- **parent_child** (parent-child relationships for family access)
 - **card_progress** + **card_history** + **profile_stats** (learning data)
 - **generated_cache** (AI-generated question cache)
 - **test_sessions** + **test_reports** (dynamic test history and AI study reports)
@@ -124,6 +127,8 @@ See `server/db/schema.sql` for full schema. Key tables:
 - `test_sessions`: id, profile_id, topic, age_group, difficulty, format, question_count, score, completed_at, questions_data (JSON), answers_data (JSON)
 - `test_reports`: id, session_id (unique), profile_id, report_data (JSON), generated_at
 - `learning_profiles`: profile_id, weak_areas (JSON), strong_areas (JSON), topics_tested (JSON), updated_at
+- `profiles` (auth columns added via ALTER): pin_hash, role (admin/parent/child)
+- `parent_child`: parent_id, child_id (links parents to children)
 
 ### Migration
 
@@ -133,12 +138,20 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
 
 ## API Endpoints
 
-### Questions API (`server/routes/questions.js`)
+### Auth API (`server/routes/auth.js`) — unauthenticated
+- `GET /api/auth/profiles` - Profile list for login screen (id, name, icon, hasPin)
+- `POST /api/auth/login` - Verify PIN, return JWT + profile
+- `POST /api/auth/set-pin` - First-time PIN setup (only when no PIN exists)
+- `GET /api/auth/me` - Validate token, return profile + role (authenticated)
+- `POST /api/auth/change-pin` - Change existing PIN (authenticated)
+- `GET /api/auth/children` - Returns linked children profiles (admin/parent only)
+
+### Questions API (`server/routes/questions.js`) — authenticated
 - `GET /api/subjects` - Returns all subjects with themes
 - `GET /api/subjects/:subjectId/questions` - Returns questions for a subject
 - `GET /api/subjects/:subjectId/questions?theme=:themeId` - Filter by theme
 - `GET /api/profiles` - Returns user profiles
-- `POST /api/generate/save` - Save AI-generated questions to the question bank
+- `POST /api/generate/save` - Save AI-generated questions to the question bank (admin only)
 
 ### Claude API (`server/routes/claude.js`)
 - `GET /api/health` - Returns server status and whether Claude API key is configured
@@ -241,27 +254,43 @@ The project is built in phases (see `brief.md` and `PHASE2.md`):
 - **Context-aware test generation**: When generating new tests, `TestConfig` fetches the user's learning profile and includes weak areas as `additionalContext` so Claude can target areas needing improvement
 - **Dashboard test reports**: New `TestReports` component on the Dashboard shows recent test reports with expandable details (topic, score, date, full study report)
 
+### Phase 6a (Complete)
+- **PIN-based authentication**: Users set a 4-6 digit PIN on first login; JWT tokens (24h expiry) stored in `localStorage`
+- **Role-based access**: Three roles — `admin` (Dad), `parent`, `child`; enforced on both frontend and backend
+- **Auth middleware**: `server/middleware/auth.js` provides `authenticate`, `requireRole`, and `canAccessProfile` helpers
+- **Auth wall**: All `/api/*` routes (except `/api/health` and `/api/auth/*`) require a valid JWT
+- **Parent-child relationships**: `parent_child` table links parents to children; parents/admins can view children's data
+- **Login rate limiting**: 5 failed PIN attempts per profile triggers a 5-minute lockout (in-memory)
+- **Family Dashboard**: Admin/parent-only page at `/family` showing all children's stats and recent test reports
+- **Authenticated fetch**: `client/src/utils/api.js` provides `apiFetch` wrapper that attaches JWT and handles 401 redirects
+- **Admin-only restrictions**: Save to question bank (`POST /api/generate/save`) and import (`POST /api/subjects/import`) require admin role
+- **Profile access control**: Progress, reports, and learning profile endpoints check that the requesting user owns the data or is a parent/admin
+
 ## Important Conventions
 
 ### File Organization
 - **Components**: Reusable UI elements
-  - Core: `FlashcardDeck`, `ConfigPanel`, `Navbar`, `ProfileSelector`
+  - Core: `FlashcardDeck`, `ConfigPanel`, `Navbar`, `PinInput`
   - Dashboard: `StatsCards`, `AccuracyChart`, `CategoryStrength`, `WeakestCards`, `Heatmap`, `TestReports`
   - Features: `ExportPDF`, `ImportExport`, `Timer`, `ThemeSwitcher`, `ColorPresets`, `StudyReport`
   - Wizards: `FlashcardGenerationWizard`, `TestConfig`, `TestQuestion`, `TestResults`
 - **Pages**: Route-level components
-  - `Home`, `Flashcards`, `DynamicTest`, `Results`, `Dashboard`, `SmartReview`
+  - `Login`, `Home`, `Flashcards`, `DynamicTest`, `Results`, `Dashboard`, `SmartReview`, `FamilyDashboard`
 - **Hooks**: Custom React hooks
   - `useQuestions` - Fetch and filter questions
   - `useProgress` - Track learning progress
   - `useTimer` - Exam timer functionality
 - **Context**: React context providers
   - `ThemeContext` - Theme switching (dark/light/high contrast)
+- **Utils**: Frontend utilities
+  - `api.js` - Authenticated fetch wrapper (`apiFetch`)
 - **Routes**: Express route handlers (thin controllers)
+  - `auth.js` - Authentication (login, PIN setup, token validation, children)
   - `questions.js` - Question bank operations
   - `claude.js` - AI generation, marking, study reports, and learning profiles
   - `progress.js` - Progress tracking and spaced repetition
 - **DAL**: Data access layer (all DB operations)
+  - `auth.js` - Login profiles, PIN management, parent-child queries
   - `subjects.js` - Subjects, themes, questions, categories, import/export
   - `profiles.js` - User profiles
   - `progress.js` - Card progress, history, stats, due cards
@@ -274,7 +303,20 @@ The project is built in phases (see `brief.md` and `PHASE2.md`):
 - **Utils**: Server-side utilities (pure logic, no DB calls)
   - `spacedRepetition.js` - SM-2 algorithm implementation
   - `streaks.js` - Streak and statistics tracking
-- **Middleware**: Express middleware (`errorHandler.js`)
+- **Middleware**: Express middleware
+  - `errorHandler.js` - Centralized error handler
+  - `auth.js` - JWT authentication, role checking, profile access control
+
+### Authentication & Authorization
+- **Strategy**: PIN-based login with JWT tokens (24h expiry, stored in `localStorage`)
+- **JWT payload**: `{ profileId, role, name }`; secret from `JWT_SECRET` env var
+- **Roles**: `admin` (full access), `parent` (view children), `child` (own data only)
+- **Auth wall**: All `/api/*` routes except `/api/health` and `/api/auth/*` require valid JWT
+- **Profile access**: Users can only access their own data; admins and parents can access children's data via `canAccessProfile()`
+- **Admin-only**: Save to bank (`POST /api/generate/save`), import (`POST /api/subjects/import`)
+- **Frontend**: `apiFetch()` from `client/src/utils/api.js` attaches Bearer token; on 401, clears token and redirects to login
+- **Rate limiting**: 5 failed login attempts per profile triggers 5-minute lockout (in-memory)
+- **Parent-child links**: Stored in `parent_child` table; set during migration
 
 ### Error Handling
 - Server uses centralized error handler middleware
@@ -367,23 +409,30 @@ Subjects are now stored in SQLite. To add one:
 - `CLAUDE.md` - This file - guidance for future development
 
 ### Backend Core
-- `server/index.js` - Express app setup, health check, DB initialization
-- `server/db/index.js` - SQLite singleton (WAL mode, schema init)
-- `server/db/schema.sql` - Database table definitions
-- `server/db/migrate-json.js` - One-time JSON→SQLite migration script
+- `server/index.js` - Express app setup, health check, auth wall, DB initialization
+- `server/db/index.js` - SQLite singleton (WAL mode, schema init, ALTER TABLE for auth columns)
+- `server/db/schema.sql` - Database table definitions (includes `parent_child`)
+- `server/db/migrate-json.js` - One-time JSON→SQLite migration script (sets roles, parent-child links)
+- `server/dal/auth.js` - Data access: login profiles, PIN management, parent-child queries
 - `server/dal/subjects.js` - Data access: subjects, themes, questions, import/export
-- `server/dal/profiles.js` - Data access: user profiles
+- `server/dal/profiles.js` - Data access: user profiles (includes role in output)
 - `server/dal/progress.js` - Data access: card progress, history, stats, due cards
 - `server/dal/cache.js` - Data access: generated question cache
 - `server/dal/reports.js` - Data access: test sessions, reports, learning profiles
+- `server/routes/auth.js` - Authentication routes (login, PIN setup, token validation, children)
 - `server/routes/claude.js` - AI-powered question generation, marking, study reports, and learning profiles
-- `server/routes/questions.js` - Question bank API routes (delegates to DAL)
-- `server/routes/progress.js` - Progress tracking API routes (delegates to DAL)
+- `server/routes/questions.js` - Question bank API routes (delegates to DAL, admin-only for save/import)
+- `server/routes/progress.js` - Progress tracking API routes (delegates to DAL, profile access checks)
+- `server/middleware/auth.js` - JWT authentication, role checking, profile access control
 - `server/utils/spacedRepetition.js` - SM-2 algorithm for review scheduling
 - `server/utils/streaks.js` - Statistics and streak tracking
 
 ### Frontend Core
-- `client/src/App.jsx` - React Router setup, profile and theme state
+- `client/src/App.jsx` - React Router setup, auth state, conditional routing (Login vs app)
+- `client/src/utils/api.js` - Authenticated fetch wrapper (`apiFetch`) with 401 handling
+- `client/src/pages/Login.jsx` - PIN-based login with profile selection and first-time PIN setup
+- `client/src/pages/FamilyDashboard.jsx` - Admin/parent view of children's stats and reports
+- `client/src/components/PinInput.jsx` - 4-6 digit PIN input with auto-advance
 - `client/src/context/ThemeContext.jsx` - Theme provider (dark/light/high contrast)
 - `client/src/pages/Dashboard.jsx` - Progress analytics, charts, and test reports
 - `client/src/pages/DynamicTest.jsx` - Dynamic test flow with pause-for-feedback

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiFetch } from '../utils/api';
 import ColorPresets from './ColorPresets';
 
 const EMOJI_GRID = [
@@ -66,9 +67,8 @@ export default function FlashcardGenerationWizard({ profile, subjects, onComplet
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/generate', {
+      const res = await apiFetch('/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           topic: generation.topic,
           ageGroup: getAgeGroup(),
@@ -133,9 +133,8 @@ export default function FlashcardGenerationWizard({ profile, subjects, onComplet
     }
 
     try {
-      const res = await fetch('/api/generate/save', {
+      const res = await apiFetch('/api/generate/save', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
       const data = await res.json();

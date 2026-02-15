@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react';
+import { apiFetch } from '../utils/api';
 
 export function ExportButton({ subjectId, subjectName }) {
   const [exporting, setExporting] = useState(false);
@@ -6,7 +7,7 @@ export function ExportButton({ subjectId, subjectName }) {
   const handleExport = async () => {
     setExporting(true);
     try {
-      const res = await fetch(`/api/subjects/${subjectId}/export`);
+      const res = await apiFetch(`/api/subjects/${subjectId}/export`);
       if (!res.ok) throw new Error('Export failed');
       const data = await res.json();
 
@@ -85,9 +86,8 @@ export function ImportButton({ onImported }) {
     if (!preview) return;
     setImporting(true);
     try {
-      const res = await fetch('/api/subjects/import', {
+      const res = await apiFetch('/api/subjects/import', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(preview.data)
       });
       if (!res.ok) throw new Error('Import failed');

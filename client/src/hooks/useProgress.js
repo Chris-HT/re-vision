@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { apiFetch } from '../utils/api';
 
 export function useProgress(profileId) {
   const [progress, setProgress] = useState(null);
@@ -9,7 +10,7 @@ export function useProgress(profileId) {
   const fetchProgress = useCallback(async () => {
     if (!profileId) return;
     try {
-      const res = await fetch(`/api/progress/${profileId}`);
+      const res = await apiFetch(`/api/progress/${profileId}`);
       if (res.ok) setProgress(await res.json());
     } catch (err) {
       console.error('Failed to fetch progress:', err);
@@ -19,7 +20,7 @@ export function useProgress(profileId) {
   const fetchStats = useCallback(async () => {
     if (!profileId) return;
     try {
-      const res = await fetch(`/api/progress/${profileId}/stats`);
+      const res = await apiFetch(`/api/progress/${profileId}/stats`);
       if (res.ok) setStats(await res.json());
     } catch (err) {
       console.error('Failed to fetch stats:', err);
@@ -33,7 +34,7 @@ export function useProgress(profileId) {
       if (themes) params.set('themes', themes);
       if (limit) params.set('limit', String(limit));
       const url = `/api/progress/${profileId}/due?${params}`;
-      const res = await fetch(url);
+      const res = await apiFetch(url);
       if (res.ok) {
         const data = await res.json();
         setDueInfo(data);
@@ -47,9 +48,8 @@ export function useProgress(profileId) {
   const recordAnswer = useCallback(async (cardId, result) => {
     if (!profileId) return;
     try {
-      const res = await fetch(`/api/progress/${profileId}/card/${cardId}`, {
+      const res = await apiFetch(`/api/progress/${profileId}/card/${cardId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ result })
       });
       if (res.ok) {

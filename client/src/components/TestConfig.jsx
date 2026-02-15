@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/api';
 
 export default function TestConfig({ profile, onStartTest, previousTests }) {
   const [formData, setFormData] = useState({
@@ -15,7 +16,7 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
 
   useEffect(() => {
     if (profile?.id) {
-      fetch(`/api/learning-profile/${profile.id}`)
+      apiFetch(`/api/learning-profile/${profile.id}`)
         .then(res => res.ok ? res.json() : null)
         .then(data => { if (data) setLearningProfile(data); })
         .catch(() => {});
@@ -38,9 +39,8 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
           : profileHint;
       }
 
-      const response = await fetch('/api/generate', {
+      const response = await apiFetch('/api/generate', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           ...formData,
           additionalContext: enrichedContext,
@@ -66,7 +66,7 @@ export default function TestConfig({ profile, onStartTest, previousTests }) {
     setError(null);
 
     try {
-      const response = await fetch(`/api/generated/${cacheKey}`);
+      const response = await apiFetch(`/api/generated/${cacheKey}`);
       const data = await response.json();
       
       if (!response.ok) {

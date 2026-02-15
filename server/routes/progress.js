@@ -2,12 +2,16 @@ import express from 'express';
 import {
   getProgress, recordCardReview, getDueCards, getDetailedStats
 } from '../dal/progress.js';
+import { canAccessProfile } from '../middleware/auth.js';
 
 const router = express.Router();
 
 // GET /api/progress/:profileId
 router.get('/progress/:profileId', (req, res, next) => {
   try {
+    if (!canAccessProfile(req.user, req.params.profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     const progress = getProgress(req.params.profileId);
     res.json(progress);
   } catch (error) {
@@ -19,6 +23,9 @@ router.get('/progress/:profileId', (req, res, next) => {
 router.put('/progress/:profileId/card/:cardId', (req, res, next) => {
   try {
     const { profileId, cardId } = req.params;
+    if (!canAccessProfile(req.user, profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     const { result } = req.body;
 
     if (!['correct', 'incorrect', 'skipped'].includes(result)) {
@@ -36,6 +43,9 @@ router.put('/progress/:profileId/card/:cardId', (req, res, next) => {
 router.get('/progress/:profileId/due', (req, res, next) => {
   try {
     const { profileId } = req.params;
+    if (!canAccessProfile(req.user, profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     const { themes, limit } = req.query;
     const themeList = themes ? themes.split(',') : null;
     const maxCards = limit ? parseInt(limit) : 30;
@@ -51,6 +61,9 @@ router.get('/progress/:profileId/due', (req, res, next) => {
 router.get('/progress/:profileId/stats', (req, res, next) => {
   try {
     const { profileId } = req.params;
+    if (!canAccessProfile(req.user, profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     const stats = getDetailedStats(profileId);
     res.json(stats);
   } catch (error) {

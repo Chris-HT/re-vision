@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '../utils/api';
 
 export function useQuestions(subjectId, theme = null) {
   const [questions, setQuestions] = useState([]);
@@ -21,7 +22,7 @@ export function useQuestions(subjectId, theme = null) {
           ? `/api/subjects/${subjectId}/questions?theme=${theme}`
           : `/api/subjects/${subjectId}/questions`;
         
-        const response = await fetch(url);
+        const response = await apiFetch(url);
         if (!response.ok) throw new Error('Failed to fetch questions');
         
         const data = await response.json();

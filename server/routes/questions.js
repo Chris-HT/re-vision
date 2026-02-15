@@ -4,6 +4,7 @@ import {
   saveGeneratedQuestions, exportSubject, importSubject
 } from '../dal/subjects.js';
 import { getAllProfiles, updateProfile } from '../dal/profiles.js';
+import { requireRole, canAccessProfile } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -48,6 +49,9 @@ router.get('/profiles', (req, res, next) => {
 router.put('/profiles/:profileId', (req, res, next) => {
   try {
     const { profileId } = req.params;
+    if (!canAccessProfile(req.user, profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     const updates = req.body;
 
     const profile = updateProfile(profileId, updates);
@@ -61,7 +65,7 @@ router.put('/profiles/:profileId', (req, res, next) => {
   }
 });
 
-router.post('/generate/save', (req, res, next) => {
+router.post('/generate/save', requireRole('admin'), (req, res, next) => {
   try {
     const { subjectId, themeId, questions, subjectMetadata, themeMetadata } = req.body;
 
@@ -98,7 +102,7 @@ router.get('/subjects/:subjectId/export', (req, res, next) => {
 });
 
 // POST /api/subjects/import - Import a subject bundle
-router.post('/subjects/import', (req, res, next) => {
+router.post('/subjects/import', requireRole('admin'), (req, res, next) => {
   try {
     const bundle = req.body;
 
@@ -107,8 +111,8 @@ router.post('/subjects/import', (req, res, next) => {
       return res.status(400).json({ error: 'Invalid import bundle: missing subject or questionFiles' });
     }
 
-    if (!bundle.subject.id || !bundle.subject.name || !bundle.subject.themes) {
-      return res.status(400).json({ error: 'Invalid import bundle: subject missing required fields' });
+    if (!bundle.subject.id || !bundle.subject.name || !Array.isArray(bundle.subject.themes)) {
+      return res.status(400).json({ error: 'Invalid import bundle: subject missing required fields (id, name, themes array)' });
     }
 
     const { subjectId, totalQuestions } = importSubject(bundle);

@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { apiFetch } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
 
 const themes = [
@@ -29,9 +30,8 @@ export default function ThemeSwitcher({ profileId, onThemeChange }) {
     // Persist to profile
     if (profileId) {
       try {
-        await fetch(`/api/profiles/${profileId}`, {
+        await apiFetch(`/api/profiles/${profileId}`, {
           method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ theme: themeId })
         });
       } catch (err) {

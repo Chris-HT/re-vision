@@ -6,6 +6,7 @@ import {
   saveTestSession, saveTestReport, getReportsForProfile,
   getLearningProfile, updateLearningProfile
 } from '../dal/reports.js';
+import { canAccessProfile } from '../middleware/auth.js';
 
 const router = express.Router();
 
@@ -468,6 +469,9 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
 router.get('/reports/:profileId', (req, res) => {
   try {
     const { profileId } = req.params;
+    if (!canAccessProfile(req.user, profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     const limit = parseInt(req.query.limit) || 10;
     const reports = getReportsForProfile(profileId, limit);
     res.json({ success: true, reports });
@@ -480,6 +484,9 @@ router.get('/reports/:profileId', (req, res) => {
 router.get('/learning-profile/:profileId', (req, res) => {
   try {
     const { profileId } = req.params;
+    if (!canAccessProfile(req.user, profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
     const profile = getLearningProfile(profileId);
     res.json({ success: true, ...profile });
   } catch (error) {

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { apiFetch } from '../utils/api';
 
 export default function TestQuestion({ 
   question, 
@@ -36,9 +37,8 @@ export default function TestQuestion({
     setError(null);
     
     try {
-      const response = await fetch('/api/mark', {
+      const response = await apiFetch('/api/mark', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           question: question.question,
           correctAnswer: question.answer,

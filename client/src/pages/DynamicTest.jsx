@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../utils/api';
 import TestConfig from '../components/TestConfig';
 import TestQuestion from '../components/TestQuestion';
 import TestResults from '../components/TestResults';
@@ -26,7 +27,7 @@ export default function DynamicTest({ profile }) {
       try {
         const [healthResponse, testsResponse] = await Promise.all([
           fetch('/api/health'),
-          fetch('/api/generated')
+          apiFetch('/api/generated')
         ]);
 
         const health = await healthResponse.json();
@@ -86,7 +87,7 @@ export default function DynamicTest({ profile }) {
   const handleSaveToBank = async () => {
     // Refresh previous tests after saving
     try {
-      const response = await fetch('/api/generated');
+      const response = await apiFetch('/api/generated');
       if (response.ok) {
         const tests = await response.json();
         setPreviousTests(tests.generations || []);

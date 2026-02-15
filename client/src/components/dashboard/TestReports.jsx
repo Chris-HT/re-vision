@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { apiFetch } from '../../utils/api';
 import StudyReport from '../StudyReport';
 
 export default function TestReports({ profileId }) {
@@ -9,7 +10,7 @@ export default function TestReports({ profileId }) {
   useEffect(() => {
     if (!profileId) return;
 
-    fetch(`/api/reports/${profileId}`)
+    apiFetch(`/api/reports/${profileId}`)
       .then(res => res.ok ? res.json() : { reports: [] })
       .then(data => setReports(data.reports || []))
       .catch(() => setReports([]))

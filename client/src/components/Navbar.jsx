@@ -1,8 +1,9 @@
 import { Link, useLocation } from 'react-router-dom';
 import ThemeSwitcher from './ThemeSwitcher';
 
-export default function Navbar({ profile }) {
+export default function Navbar({ profile, onLogout }) {
   const location = useLocation();
+  const isParentOrAdmin = profile?.role === 'admin' || profile?.role === 'parent';
 
   return (
     <nav style={{ backgroundColor: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }} className="border-b">
@@ -60,6 +61,19 @@ export default function Navbar({ profile }) {
                 >
                   Dashboard
                 </Link>
+                {isParentOrAdmin && (
+                  <Link
+                    to="/family"
+                    className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                      location.pathname === '/family'
+                        ? 'bg-blue-600 text-white'
+                        : ''
+                    }`}
+                    style={location.pathname !== '/family' ? { color: 'var(--text-secondary)' } : {}}
+                  >
+                    Family
+                  </Link>
+                )}
               </div>
             )}
           </div>
@@ -70,13 +84,13 @@ export default function Navbar({ profile }) {
                 <ThemeSwitcher profileId={profile.id} />
                 <span className="text-2xl">{profile.icon}</span>
                 <span style={{ color: 'var(--text-primary)' }} className="font-medium">{profile.name}</span>
-                <Link
-                  to="/"
+                <button
+                  onClick={onLogout}
                   className="ml-4 text-sm hover:opacity-80"
                   style={{ color: 'var(--text-muted)' }}
                 >
-                  Switch Profile
-                </Link>
+                  Log out
+                </button>
               </>
             )}
           </div>

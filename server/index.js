@@ -5,9 +5,11 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import os from 'os';
 import './db/index.js';
+import authRoutes from './routes/auth.js';
 import questionRoutes from './routes/questions.js';
 import claudeRoutes from './routes/claude.js';
 import progressRoutes from './routes/progress.js';
+import { authenticate } from './middleware/auth.js';
 import errorHandler from './middleware/errorHandler.js';
 
 dotenv.config({ path: path.join(process.cwd(), '..', '.env') });
@@ -21,13 +23,17 @@ const PORT = process.env.PORT || 3001;
 app.use(cors());
 app.use(express.json());
 
+// Unauthenticated routes
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     claudeApiConfigured: !!process.env.ANTHROPIC_API_KEY && process.env.ANTHROPIC_API_KEY !== 'sk-ant-your-key-here'
   });
 });
+app.use('/api/auth', authRoutes);
 
+// Auth wall — everything below requires valid JWT
+app.use('/api', authenticate);
 app.use('/api', questionRoutes);
 app.use('/api', claudeRoutes);
 app.use('/api', progressRoutes);

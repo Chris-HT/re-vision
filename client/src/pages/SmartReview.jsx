@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { apiFetch } from '../utils/api';
 import { useProgress } from '../hooks/useProgress';
 import FlashcardDeck from '../components/FlashcardDeck';
 
@@ -30,13 +31,13 @@ export default function SmartReview({ profile }) {
 
   const loadQuestions = async () => {
     try {
-      const subjectsRes = await fetch('/api/subjects');
+      const subjectsRes = await apiFetch('/api/subjects');
       const subjectsData = await subjectsRes.json();
 
       let questions = [];
       let cats = {};
       for (const subject of subjectsData.subjects) {
-        const questionsRes = await fetch(`/api/subjects/${subject.id}/questions`);
+        const questionsRes = await apiFetch(`/api/subjects/${subject.id}/questions`);
         const questionsData = await questionsRes.json();
         questions = questions.concat(questionsData.questions);
         cats = { ...cats, ...questionsData.categories };
