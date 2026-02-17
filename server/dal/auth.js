@@ -67,16 +67,17 @@ export function getAllProfiles() {
 
 export function createProfile({ name, icon, role, age_group, default_subjects, parent_id }) {
   const id = randomUUID();
-  const insert = db.prepare(
-    `INSERT INTO profiles (id, name, icon, age_group, role, default_subjects, theme, font_size)
-     VALUES (?, ?, ?, ?, ?, ?, 'dark', 'medium')`
-  );
-  insert.run(id, name, icon, age_group, role, JSON.stringify(default_subjects || []));
+  const run = db.transaction(() => {
+    db.prepare(
+      `INSERT INTO profiles (id, name, icon, age_group, role, default_subjects, theme, font_size)
+       VALUES (?, ?, ?, ?, ?, ?, 'dark', 'medium')`
+    ).run(id, name, icon, age_group, role, JSON.stringify(default_subjects || []));
 
-  if (parent_id && role === 'child') {
-    db.prepare('INSERT OR IGNORE INTO parent_child (parent_id, child_id) VALUES (?, ?)').run(parent_id, id);
-  }
-
+    if (parent_id && role === 'child') {
+      db.prepare('INSERT OR IGNORE INTO parent_child (parent_id, child_id) VALUES (?, ?)').run(parent_id, id);
+    }
+  });
+  run();
   return id;
 }
 
