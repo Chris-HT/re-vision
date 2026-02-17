@@ -1,4 +1,5 @@
 import db from '../db/index.js';
+import { randomUUID } from 'crypto';
 
 export function getProfileForLogin(profileId) {
   return db.prepare(
@@ -51,42 +52,46 @@ export function isParentOf(parentId, childId) {
 }
 
 export function getAllProfiles() {
-  return db.prepare(
+  const rows = db.prepare(
     'SELECT id, name, icon, age_group, role, pin_hash FROM profiles ORDER BY id'
   ).all();
+  return rows.map(r => ({
+    id: r.id,
+    name: r.name,
+    icon: r.icon,
+    ageGroup: r.age_group,
+    role: r.role,
+    hasPin: !!r.pin_hash
+  }));
 }
 
 export function createProfile({ name, icon, role, age_group, default_subjects, parent_id }) {
+  const id = randomUUID();
   const insert = db.prepare(
-    `INSERT INTO profiles (name, icon, age_group, role, default_subjects, theme, font_size)
-     VALUES (?, ?, ?, ?, ?, 'dark', 'medium')`
+    `INSERT INTO profiles (id, name, icon, age_group, role, default_subjects, theme, font_size)
+     VALUES (?, ?, ?, ?, ?, ?, 'dark', 'medium')`
   );
-  const result = insert.run(
-    name,
-    icon,
-    age_group,
-    role,
-    JSON.stringify(default_subjects || [])
-  );
-  const newId = result.lastInsertRowid;
+  insert.run(id, name, icon, age_group, role, JSON.stringify(default_subjects || []));
 
   if (parent_id && role === 'child') {
-    db.prepare('INSERT OR IGNORE INTO parent_child (parent_id, child_id) VALUES (?, ?)').run(parent_id, newId);
+    db.prepare('INSERT OR IGNORE INTO parent_child (parent_id, child_id) VALUES (?, ?)').run(parent_id, id);
   }
 
-  return newId;
+  return id;
 }
 
 export function updateProfile(id, { name, icon, role, age_group, default_subjects, parent_id }) {
-  db.prepare(
-    `UPDATE profiles SET name = ?, icon = ?, age_group = ?, role = ?, default_subjects = ? WHERE id = ?`
-  ).run(name, icon, age_group, role, JSON.stringify(default_subjects || []), id);
+  const update = db.transaction(() => {
+    db.prepare(
+      `UPDATE profiles SET name = ?, icon = ?, age_group = ?, role = ?, default_subjects = ? WHERE id = ?`
+    ).run(name, icon, age_group, role, JSON.stringify(default_subjects || []), id);
 
-  // Re-create parent link
-  db.prepare('DELETE FROM parent_child WHERE child_id = ?').run(id);
-  if (parent_id && role === 'child') {
-    db.prepare('INSERT INTO parent_child (parent_id, child_id) VALUES (?, ?)').run(parent_id, id);
-  }
+    db.prepare('DELETE FROM parent_child WHERE child_id = ?').run(id);
+    if (parent_id && role === 'child') {
+      db.prepare('INSERT INTO parent_child (parent_id, child_id) VALUES (?, ?)').run(parent_id, id);
+    }
+  });
+  update();
 }
 
 export function deleteProfile(id) {
