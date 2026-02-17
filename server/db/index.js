@@ -20,6 +20,11 @@ const db = new Database(dbPath);
 // Enable WAL mode for better concurrent read performance
 db.pragma('journal_mode = WAL');
 db.pragma('foreign_keys = ON');
+// Wait up to 5s before throwing SQLITE_BUSY — essential on Pi where PM2, the app,
+// and any shell scripts can contend for the file simultaneously
+db.pragma('busy_timeout = 5000');
+// NORMAL is safe with WAL and avoids expensive fsyncs on every write (SD card wear)
+db.pragma('synchronous = NORMAL');
 
 // Run schema
 const schema = fs.readFileSync(schemaPath, 'utf-8');

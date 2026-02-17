@@ -44,7 +44,7 @@ router.put('/progress/:profileId/card/:cardId', (req, res, next) => {
     // Gamification: award XP/coins per card review
     const xpAmount = result === 'correct' ? 10 : 3;
     const coinAmount = result === 'correct' ? 5 : 0;
-    const xpResult = awardXP(profileId, xpAmount);
+    let xpResult = awardXP(profileId, xpAmount);
     let coinsResult = null;
     if (coinAmount > 0) {
       coinsResult = awardCoins(profileId, coinAmount, 'card-review');
@@ -57,6 +57,10 @@ router.put('/progress/:profileId/card/:cardId', (req, res, next) => {
       questCompleted.push(...incrementQuestProgress(profileId, 'cards_reviewed', 1));
       if (result === 'correct') {
         questCompleted.push(...incrementQuestProgress(profileId, 'correct_answers', 1));
+      }
+      for (const quest of questCompleted) {
+        if (quest.xpReward > 0) xpResult = awardXP(profileId, quest.xpReward);
+        if (quest.coinReward > 0) awardCoins(profileId, quest.coinReward, `quest-complete-${quest.questId}`);
       }
     } catch { /* quest system non-critical */ }
 

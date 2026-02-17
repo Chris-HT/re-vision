@@ -9,6 +9,34 @@ const router = express.Router();
 // In-memory login rate limiter: profileId → { failures, lockedUntil }
 const loginAttempts = new Map();
 
+// Separate rate limiter for set-pin: 3 attempts → 5-min lockout.
+// Counts every call (no concept of "correct" before first PIN is set).
+const setPinAttempts = new Map();
+
+function checkSetPinLock(profileId) {
+  const entry = setPinAttempts.get(profileId);
+  if (!entry) return false;
+  if (entry.lockedUntil && Date.now() < entry.lockedUntil) return true;
+  if (entry.lockedUntil && Date.now() >= entry.lockedUntil) {
+    setPinAttempts.delete(profileId);
+    return false;
+  }
+  return false;
+}
+
+function recordSetPinAttempt(profileId) {
+  const entry = setPinAttempts.get(profileId) || { attempts: 0, lockedUntil: null };
+  entry.attempts++;
+  if (entry.attempts >= 3) {
+    entry.lockedUntil = Date.now() + 5 * 60 * 1000;
+  }
+  setPinAttempts.set(profileId, entry);
+}
+
+function clearSetPinAttempts(profileId) {
+  setPinAttempts.delete(profileId);
+}
+
 function checkLoginLock(profileId) {
   const entry = loginAttempts.get(profileId);
   if (!entry) return false;
@@ -126,6 +154,14 @@ router.post('/set-pin', async (req, res, next) => {
       return res.status(400).json({ error: 'PIN must be 4-6 digits' });
     }
 
+    if (checkSetPinLock(profileId)) {
+      return res.status(429).json({
+        error: 'Too many attempts. Try again in 5 minutes.',
+        code: 'LOCKED'
+      });
+    }
+    recordSetPinAttempt(profileId);
+
     const profile = getProfileForLogin(profileId);
     if (!profile) {
       return res.status(404).json({ error: 'Profile not found' });
@@ -137,6 +173,7 @@ router.post('/set-pin', async (req, res, next) => {
 
     const hash = await bcrypt.hash(pin, 10);
     setPin(profileId, hash);
+    clearSetPinAttempts(profileId);
 
     const token = jwt.sign(
       { profileId: profile.id, role: profile.role, name: profile.name },

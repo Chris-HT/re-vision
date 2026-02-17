@@ -13,6 +13,22 @@ import { incrementQuestProgress, updateLastSessionDate as updateQuestSessionDate
 
 const router = express.Router();
 
+// Allowlists for enum fields — reject anything unexpected before it reaches a prompt
+const VALID_AGE_GROUPS = new Set(['primary', 'secondary', 'adult']);
+const VALID_DIFFICULTIES = new Set(['easy', 'medium', 'hard']);
+const VALID_FORMATS = new Set(['multiple_choice', 'free_text', 'mix', 'flashcard']);
+
+// Hard length caps for all user-supplied text that enters a prompt
+const MAX_TOPIC_LEN = 200;
+const MAX_CONTEXT_LEN = 500;
+const MAX_QUESTION_LEN = 500;
+const MAX_ANSWER_LEN = 2000;
+
+function cap(str, maxLen) {
+  if (typeof str !== 'string') return '';
+  return str.slice(0, maxLen);
+}
+
 // Lazy singleton — created once on first API call, reused thereafter
 let anthropicClient = null;
 function getAnthropicClient() {
@@ -77,15 +93,29 @@ router.post('/generate', async (req, res) => {
       });
     }
 
-    if (count < 5 || count > 20) {
+    if (!VALID_AGE_GROUPS.has(ageGroup)) {
+      return res.status(400).json({ error: 'Invalid ageGroup', code: 'INVALID_REQUEST' });
+    }
+    if (!VALID_DIFFICULTIES.has(difficulty)) {
+      return res.status(400).json({ error: 'Invalid difficulty', code: 'INVALID_REQUEST' });
+    }
+    if (!VALID_FORMATS.has(format)) {
+      return res.status(400).json({ error: 'Invalid format', code: 'INVALID_REQUEST' });
+    }
+
+    const parsedCount = parseInt(count, 10);
+    if (isNaN(parsedCount) || parsedCount < 5 || parsedCount > 20) {
       return res.status(400).json({
-        error: 'Count must be between 5 and 20',
+        error: 'Count must be an integer between 5 and 20',
         code: 'INVALID_COUNT'
       });
     }
 
+    const safeTopic = cap(topic, MAX_TOPIC_LEN);
+    const safeContext = cap(additionalContext, MAX_CONTEXT_LEN);
+
     const cacheKey = crypto.createHash('md5')
-      .update(`${topic}-${ageGroup}-${difficulty}-${count}-${format}`.toLowerCase())
+      .update(`${safeTopic}-${ageGroup}-${difficulty}-${parsedCount}-${format}`.toLowerCase())
       .digest('hex');
 
     // Check cache first — don't count cached requests against rate limit
@@ -117,18 +147,18 @@ router.post('/generate', async (req, res) => {
     if (format === 'flashcard') {
       systemPrompt = `You are a flashcard generator for RE-VISION, a UK-based family revision app.
 
-Generate exactly ${count} flashcard Q&A pairs on the topic: "${topic}"
+Generate exactly ${parsedCount} flashcard Q&A pairs on the topic: "${safeTopic}"
 Target age group: ${ageGroup}
 Difficulty: ${difficulty}
 
-${additionalContext ? "Additional instructions: " + additionalContext : ""}${literalRule}
+${safeContext ? "Additional context: " + safeContext : ""}${literalRule}
 
 CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation. Just the JSON object.
 
 Schema:
 {
   "meta": {
-    "topic": "${topic}",
+    "topic": "${safeTopic}",
     "ageGroup": "${ageGroup}",
     "difficulty": "${difficulty}",
     "generatedAt": "ISO date string"
@@ -160,19 +190,19 @@ Rules:
     } else {
       systemPrompt = `You are a quiz generator for RE-VISION, a UK-based family revision app.
 
-Generate exactly ${count} questions on the topic: "${topic}"
+Generate exactly ${parsedCount} questions on the topic: "${safeTopic}"
 Target age group: ${ageGroup}
 Difficulty: ${difficulty}
 Format: ${format}
 
-${additionalContext ? "Additional instructions: " + additionalContext : ""}${literalRule}
+${safeContext ? "Additional context: " + safeContext : ""}${literalRule}
 
 CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation. Just the JSON object.
 
 Schema:
 {
   "meta": {
-    "topic": "${topic}",
+    "topic": "${safeTopic}",
     "ageGroup": "${ageGroup}",
     "difficulty": "${difficulty}",
     "generatedAt": "ISO date string"
@@ -180,7 +210,7 @@ Schema:
   "questions": [
     {
       "id": "gen-001",
-      "category": "${topic}",
+      "category": "${safeTopic}",
       "question": "The question text",
       "answer": "The correct answer — concise but complete",
       "difficulty": 1,
@@ -252,7 +282,7 @@ Rules:
     }));
 
     // Cache to SQLite
-    setCache(cacheKey, { topic, ageGroup, difficulty, count, format }, generatedData);
+    setCache(cacheKey, { topic: safeTopic, ageGroup, difficulty, count: parsedCount, format }, generatedData);
 
     res.json({
       success: true,
@@ -297,21 +327,26 @@ router.post('/mark', async (req, res) => {
       });
     }
 
+    if (!VALID_AGE_GROUPS.has(ageGroup)) {
+      return res.status(400).json({ error: 'Invalid ageGroup', code: 'INVALID_REQUEST' });
+    }
+
+    // Cap lengths before any content enters a prompt
+    const safeQuestion = cap(question, MAX_QUESTION_LEN);
+    const safeCorrectAnswer = cap(correctAnswer, MAX_ANSWER_LEN);
+    const safeStudentAnswer = cap(studentAnswer, MAX_ANSWER_LEN);
+
     const anthropic = getAnthropicClient();
 
     const markLiteralRule = literalLanguage
-      ? '\nIMPORTANT: Use clear, direct language only. Do not use idioms, metaphors, sarcasm, or figurative speech in feedback and encouragement.\n'
+      ? '\nUse clear, direct language only. Do not use idioms, metaphors, sarcasm, or figurative speech in feedback and encouragement.\n'
       : '';
 
+    // Instructions only in system prompt — no user-supplied content here
     const systemPrompt = `You are a friendly, encouraging teacher marking a student's answer in a family revision app called RE-VISION.
-
-Question: ${question}
-Correct answer: ${correctAnswer}
-Student's answer: ${studentAnswer}
 Student age group: ${ageGroup}
 ${markLiteralRule}
-
-CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
+You will receive the question, correct answer, and student's answer. Mark the student's answer and return ONLY valid JSON. No markdown, no code fences, no explanation.
 
 {
   "score": 0-100,
@@ -331,6 +366,13 @@ Marking rules:
 - Empty or completely wrong answers should score 0-20 but still get encouragement.
 - Perfect or near-perfect answers score 90-100.`;
 
+    // User-supplied content goes in the user turn, not the system prompt
+    const userContent = `Question: ${safeQuestion}
+Correct answer: ${safeCorrectAnswer}
+Student's answer: ${safeStudentAnswer}
+
+Mark this answer now. Return only JSON.`;
+
     const message = await anthropic.messages.create({
       model: 'claude-sonnet-4-5-20250929',
       max_tokens: 1024,
@@ -339,7 +381,7 @@ Marking rules:
       messages: [
         {
           role: 'user',
-          content: 'Mark this answer now. Return only JSON.'
+          content: userContent
         }
       ]
     });
@@ -355,8 +397,8 @@ Marking rules:
         model: 'claude-sonnet-4-5-20250929',
         max_tokens: 1024,
         temperature: 0.3,
-        system: systemPrompt + "\n\nIMPORTANT: Previous attempt failed to parse. Return ONLY valid JSON, no text before or after.",
-        messages: [{ role: 'user', content: 'Mark this answer now. Return only JSON, nothing else.' }]
+        system: systemPrompt + "\n\nPrevious attempt failed to parse. Return ONLY valid JSON, no text before or after.",
+        messages: [{ role: 'user', content: userContent + '\n\nReturn only JSON, nothing else.' }]
       });
 
       responseText = retryMessage.content[0].text;
@@ -434,22 +476,27 @@ router.post('/report', async (req, res) => {
       return res.status(400).json({ error: 'Answers array is empty', code: 'INVALID_REQUEST' });
     }
 
-    const ageGroup = testData.meta?.ageGroup || 'adult';
-    const topic = testData.meta?.topic || 'General';
+    const rawAgeGroup = testData.meta?.ageGroup || 'adult';
+    const ageGroup = VALID_AGE_GROUPS.has(rawAgeGroup) ? rawAgeGroup : 'adult';
+    const topic = cap(testData.meta?.topic || 'General', MAX_TOPIC_LEN);
     const totalScore = answers.length > 0 ? Math.round(answers.reduce((sum, a) => sum + (a?.score || 0), 0) / answers.length) : 0;
 
     // Fetch existing learning profile for context
     const learningProfile = getLearningProfile(profileId);
 
-    // Build question-by-question breakdown for the prompt
+    // Build question-by-question breakdown — this goes in the user turn, not the system prompt,
+    // because it contains client-supplied content (keyPointsMissed from the /mark response)
     const breakdown = testData.questions.map((q, i) => {
       const a = answers[i];
-      if (!a) return `Q${i + 1}: "${q.question}" | Skipped`;
-      return `Q${i + 1}: "${q.question}" | Score: ${a.score}% | Correct: ${a.isCorrect}${a.keyPointsMissed?.length ? ` | Missed: ${a.keyPointsMissed.join(', ')}` : ''}`;
+      if (!a) return `Q${i + 1}: "${cap(q.question, MAX_QUESTION_LEN)}" | Skipped`;
+      const missedPoints = Array.isArray(a.keyPointsMissed)
+        ? a.keyPointsMissed.map(p => cap(String(p), 200)).join(', ')
+        : '';
+      return `Q${i + 1}: "${cap(q.question, MAX_QUESTION_LEN)}" | Score: ${a.score}% | Correct: ${a.isCorrect}${missedPoints ? ` | Missed: ${missedPoints}` : ''}`;
     }).join('\n');
 
     const existingWeakAreas = learningProfile.weakAreas.length > 0
-      ? `\nThis student has previously struggled with: ${learningProfile.weakAreas.map(w => w.area).join(', ')}`
+      ? `\nThis student has previously struggled with: ${learningProfile.weakAreas.map(w => cap(w.area, 100)).join(', ')}`
       : '';
 
     let ageRules;
@@ -462,19 +509,18 @@ router.post('/report', async (req, res) => {
     }
 
     const reportLiteralRule = literalLanguage
-      ? 'IMPORTANT: Use clear, direct language only. Do not use idioms, metaphors, sarcasm, or figurative speech in the report, encouragement, and suggestions.\n'
+      ? 'Use clear, direct language only. Do not use idioms, metaphors, sarcasm, or figurative speech in the report, encouragement, and suggestions.\n'
       : '';
 
+    // Instructions and trusted metadata in system prompt; per-question data (which includes
+    // client-supplied keyPointsMissed values) goes in the user turn
     const systemPrompt = `You are a study advisor for RE-VISION, a UK-based family revision app.
-Analyse this test performance and generate a structured study report.
+Analyse the test performance data in the user message and generate a structured study report.
 
 Topic: ${topic}
 Age group: ${ageGroup}
 Overall score: ${totalScore}%
 ${existingWeakAreas}
-
-Question breakdown:
-${breakdown}
 
 ${ageRules}
 ${reportLiteralRule}
@@ -500,12 +546,40 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
       max_tokens: 2048,
       temperature: 0.4,
       system: systemPrompt,
-      messages: [{ role: 'user', content: 'Generate the study report now. Return only JSON.' }]
+      messages: [{ role: 'user', content: `Question breakdown:\n${breakdown}\n\nGenerate the study report now. Return only JSON.` }]
     });
 
     let responseText = message.content[0].text;
     responseText = responseText.replace(/^```json\s*|\s*```$/g, '').trim();
-    const reportData = JSON.parse(responseText);
+
+    let reportData;
+    try {
+      reportData = JSON.parse(responseText);
+    } catch {
+      // Retry at lower temperature before giving up
+      const retryMessage = await anthropic.messages.create({
+        model: 'claude-sonnet-4-5-20250929',
+        max_tokens: 2048,
+        temperature: 0.2,
+        system: systemPrompt + "\n\nPrevious attempt failed to parse. Return ONLY valid JSON, no text before or after.",
+        messages: [{ role: 'user', content: `Question breakdown:\n${breakdown}\n\nGenerate the study report now. Return only JSON, nothing else.` }]
+      });
+      responseText = retryMessage.content[0].text;
+      responseText = responseText.replace(/^```json\s*|\s*```$/g, '').trim();
+      try {
+        reportData = JSON.parse(responseText);
+      } catch {
+        // Both attempts failed — use a minimal fallback so the session and all rewards
+        // are still saved rather than losing the user's entire test
+        reportData = {
+          summary: `You completed this ${topic} test and scored ${totalScore}%.`,
+          strengths: [],
+          weakAreas: [],
+          studyPlan: [],
+          encouragement: totalScore >= 70 ? 'Well done on completing the test!' : "Keep practising — you'll improve!"
+        };
+      }
+    }
 
     // Save test session
     const sessionId = `session-${Date.now()}-${crypto.randomBytes(4).toString('hex')}`;
@@ -544,6 +618,10 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
       }
       questCompleted.push(...incrementQuestProgress(profileId, 'subjects_studied', 1));
       updateQuestSessionDate(profileId);
+      for (const quest of questCompleted) {
+        if (quest.xpReward > 0) xpResult = awardXP(profileId, quest.xpReward);
+        if (quest.coinReward > 0) awardCoins(profileId, quest.coinReward, `quest-complete-${quest.questId}`);
+      }
     } catch { /* quest system non-critical */ }
 
     res.json({

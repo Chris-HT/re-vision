@@ -12,13 +12,12 @@ export function setPin(profileId, hashedPin) {
 }
 
 export function getLoginProfiles() {
-  const rows = db.prepare('SELECT id, name, icon, age_group, pin_hash, role FROM profiles').all();
+  const rows = db.prepare('SELECT id, name, icon, age_group, pin_hash FROM profiles').all();
   return rows.map(r => ({
     id: r.id,
     name: r.name,
     icon: r.icon,
     ageGroup: r.age_group,
-    role: r.role,
     hasPin: !!r.pin_hash
   }));
 }
