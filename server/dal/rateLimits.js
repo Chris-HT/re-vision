@@ -34,6 +34,18 @@ export function clearAttempts(key) {
   db.prepare('DELETE FROM rate_limits WHERE key = ?').run(key);
 }
 
+// Deletes rows where both the lock window and the call window have expired.
+// Safe to call on startup — won't touch any actively-enforced limits.
+export function cleanupStaleRateLimits() {
+  const now = Date.now();
+  const result = db.prepare(`
+    DELETE FROM rate_limits
+    WHERE (locked_until IS NULL OR locked_until < ?)
+      AND (window_expires IS NULL OR window_expires < ?)
+  `).run(now, now);
+  return result.changes;
+}
+
 // Checks + increments a rolling call-count window; returns false if over limit
 export function checkAndIncrementCallLimit(key, maxCalls, windowMs) {
   const now = Date.now();

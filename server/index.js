@@ -14,6 +14,7 @@ import tokenRoutes from './routes/tokens.js';
 import { authenticate } from './middleware/auth.js';
 import errorHandler from './middleware/errorHandler.js';
 import { evictStaleCache } from './dal/cache.js';
+import { cleanupStaleRateLimits } from './dal/rateLimits.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -73,6 +74,12 @@ app.use(errorHandler);
 try {
   const evicted = evictStaleCache(30);
   if (evicted > 0) console.log(`Evicted ${evicted} stale cache entries`);
+} catch { /* non-critical */ }
+
+// Clean up expired rate limit rows on startup
+try {
+  const cleaned = cleanupStaleRateLimits();
+  if (cleaned > 0) console.log(`Cleaned ${cleaned} expired rate limit rows`);
 } catch { /* non-critical */ }
 
 const server = app.listen(PORT, '0.0.0.0', () => {
