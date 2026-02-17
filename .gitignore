@@ -11,3 +11,4 @@ client/dist
 *.db-wal
 *.db-shm
 logs/
+.claude/
