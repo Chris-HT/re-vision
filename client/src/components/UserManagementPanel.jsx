@@ -12,11 +12,13 @@ export default function UserManagementPanel({ currentProfileId, onClose }) {
   const [profiles, setProfiles] = useState([]);
   const [subjects, setSubjects] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [modal, setModal] = useState(null); // null | { mode: 'add' } | { mode: 'edit', profile }
   const [confirmDelete, setConfirmDelete] = useState(null); // profileId
   const panelRef = useRef(null);
 
   const load = async () => {
+    setLoadError('');
     setLoading(true);
     try {
       const [profilesRes, subjectsRes] = await Promise.all([
@@ -31,7 +33,9 @@ export default function UserManagementPanel({ currentProfileId, onClose }) {
         const data = await subjectsRes.json();
         setSubjects(data.subjects || []);
       }
-    } catch { /* ignore */ }
+    } catch {
+      setLoadError('Could not load profiles. Check your connection.');
+    }
     setLoading(false);
   };
 
@@ -46,7 +50,9 @@ export default function UserManagementPanel({ currentProfileId, onClose }) {
         const data = await res.json().catch(() => ({}));
         alert(data.error || 'Failed to delete profile');
       }
-    } catch { /* ignore */ }
+    } catch {
+      alert('Could not connect to server');
+    }
     setConfirmDelete(null);
   };
 
@@ -80,6 +86,8 @@ export default function UserManagementPanel({ currentProfileId, onClose }) {
         <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2">
           {loading ? (
             <p className="text-sm text-center py-8" style={{ color: 'var(--text-muted)' }}>Loading...</p>
+          ) : loadError ? (
+            <p className="text-sm text-center py-8 text-red-400">{loadError}</p>
           ) : profiles.length === 0 ? (
             <p className="text-sm text-center py-8" style={{ color: 'var(--text-muted)' }}>No profiles found.</p>
           ) : profiles.map(p => (
