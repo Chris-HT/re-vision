@@ -689,10 +689,21 @@ sudo tailscale up
 Then install Tailscale on family phones/laptops. Access the app from anywhere via the Pi's Tailscale hostname.
 
 ### Development workflow
-1. Develop on any machine using `npm run dev`
-2. Commit and push to GitHub (`master` branch)
-3. SSH into Pi and run `bash ~/revision/scripts/deploy.sh`
-4. Changes are live on the home network (and via Tailscale)
+1. Develop on `dev` branch using `npm run dev`
+2. Commit and push to `dev`: `git push origin dev`
+3. When ready to deploy, merge to `master`:
+   ```bash
+   git checkout master
+   git merge dev
+   git push origin master
+   git checkout dev
+   ```
+4. SSH into Pi and run `bash ~/revision/scripts/deploy.sh`
+5. Changes are live on the home network (and via Tailscale)
+
+**Branch conventions:**
+- `dev` — Active development; includes CLAUDE.md, PHASE*.md, brief.md, .claude/
+- `master` — Production only; no dev docs; Pi always deploys from this branch
 
 ### Important notes
 - The SQLite DB (`data/revision.db`) is **per-machine** and gitignored
