@@ -238,6 +238,12 @@ router.post('/profiles', authenticate, requireRole('admin'), (req, res, next) =>
     if (role === 'child' && !parent_id) {
       return res.status(400).json({ error: 'parent_id is required for child accounts' });
     }
+    if (role === 'child' && parent_id) {
+      const parentProfile = getProfileForLogin(parent_id);
+      if (!parentProfile) {
+        return res.status(400).json({ error: 'Parent profile not found' });
+      }
+    }
     const id = createProfile({ name, icon, role, age_group, default_subjects, parent_id });
     res.status(201).json({ id });
   } catch (error) {
@@ -265,8 +271,20 @@ router.put('/profiles/:id', authenticate, requireRole('admin'), (req, res, next)
     if (role === 'child' && !parent_id) {
       return res.status(400).json({ error: 'parent_id is required for child accounts' });
     }
+    if (role === 'child' && parent_id) {
+      const parentProfile = getProfileForLogin(parent_id);
+      if (!parentProfile) {
+        return res.status(400).json({ error: 'Parent profile not found' });
+      }
+    }
     const existing = getProfileForLogin(id);
     if (!existing) return res.status(404).json({ error: 'Profile not found' });
+    if (existing.role === 'admin' && role !== 'admin') {
+      const adminCount = getAllProfiles().filter(p => p.role === 'admin').length;
+      if (adminCount <= 1) {
+        return res.status(400).json({ error: 'Cannot change role: this is the only admin account' });
+      }
+    }
     updateProfile(id, { name, icon, role, age_group, default_subjects, parent_id });
     res.json({ success: true });
   } catch (error) {
