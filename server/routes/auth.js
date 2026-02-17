@@ -160,12 +160,13 @@ router.post('/set-pin', async (req, res, next) => {
         code: 'LOCKED'
       });
     }
-    recordSetPinAttempt(profileId);
 
     const profile = getProfileForLogin(profileId);
     if (!profile) {
       return res.status(404).json({ error: 'Profile not found' });
     }
+
+    recordSetPinAttempt(profileId);
 
     if (profile.pin_hash) {
       return res.status(400).json({ error: 'PIN already set. Use /api/auth/change-pin to change it.' });

@@ -93,7 +93,7 @@ export default function FlashcardDeck({
       perQuestionTimer.reset(timerSeconds);
       perQuestionTimer.start();
     }
-  }, [currentIndex]);
+  }, [currentIndex, timerMode, timerSeconds, perQuestionTimer.reset, perQuestionTimer.start]);
 
   const endSessionEarly = useCallback(() => {
     if (gam) gam.syncToServer();

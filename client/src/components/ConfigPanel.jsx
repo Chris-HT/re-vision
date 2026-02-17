@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export default function ConfigPanel({ 
   subjects, 
@@ -23,14 +23,19 @@ export default function ConfigPanel({
   const currentSubject = subjects?.find(s => s.id === selectedSubject);
   const availableCategories = Object.keys(categories || {});
 
+  // Store onConfigChange in a ref so it never needs to be in the effect dependency
+  // array — avoids an infinite loop if the caller passes an unstabilised callback.
+  const onConfigChangeRef = useRef(onConfigChange);
+  onConfigChangeRef.current = onConfigChange;
+
   useEffect(() => {
-    onConfigChange({
+    onConfigChangeRef.current({
       subject: selectedSubject,
       theme: selectedTheme,
       categories: selectedCategories,
       difficulty: selectedDifficulty
     });
-  }, [selectedSubject, selectedTheme, selectedCategories, selectedDifficulty, onConfigChange]);
+  }, [selectedSubject, selectedTheme, selectedCategories, selectedDifficulty]);
 
   const toggleCategory = (category) => {
     setSelectedCategories(prev => 

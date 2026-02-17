@@ -19,18 +19,18 @@ export default function TestReports({ profileId }) {
 
   if (loading) {
     return (
-      <div className="bg-slate-800 rounded-xl p-6">
-        <h2 className="text-xl font-bold text-white mb-4">Test Reports</h2>
-        <p className="text-slate-400">Loading reports...</p>
+      <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
+        <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Test Reports</h2>
+        <p style={{ color: 'var(--text-muted)' }}>Loading reports...</p>
       </div>
     );
   }
 
   if (reports.length === 0) {
     return (
-      <div className="bg-slate-800 rounded-xl p-6">
-        <h2 className="text-xl font-bold text-white mb-4">Test Reports</h2>
-        <p className="text-slate-400">No test reports yet. Complete a Dynamic Test and generate a study report to see results here.</p>
+      <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
+        <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Test Reports</h2>
+        <p style={{ color: 'var(--text-muted)' }}>No test reports yet. Complete a Dynamic Test and generate a study report to see results here.</p>
       </div>
     );
   }
@@ -42,14 +42,14 @@ export default function TestReports({ profileId }) {
   };
 
   return (
-    <div className="bg-slate-800 rounded-xl p-6">
-      <h2 className="text-xl font-bold text-white mb-4">Test Reports</h2>
+    <div className="rounded-xl p-6" style={{ backgroundColor: 'var(--bg-card-solid)' }}>
+      <h2 className="text-xl font-bold mb-4" style={{ color: 'var(--text-primary)' }}>Test Reports</h2>
       <div className="space-y-3">
         {reports.map((r) => (
-          <div key={r.id} className="bg-slate-700 rounded-lg overflow-hidden">
+          <div key={r.id} className="rounded-lg overflow-hidden" style={{ backgroundColor: 'var(--bg-input)' }}>
             <button
               onClick={() => setExpandedId(expandedId === r.id ? null : r.id)}
-              className="w-full text-left p-4 hover:bg-slate-600/50 transition-colors"
+              className="w-full text-left p-4 hover:opacity-90 transition-opacity"
             >
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
@@ -57,24 +57,24 @@ export default function TestReports({ profileId }) {
                     {r.score}%
                   </span>
                   <div>
-                    <p className="text-white font-medium">{r.topic}</p>
-                    <p className="text-xs text-slate-400">
+                    <p className="font-medium" style={{ color: 'var(--text-primary)' }}>{r.topic}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-muted)' }}>
                       {r.questionCount} questions &middot; {r.difficulty} &middot; {r.format}
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-xs text-slate-400">
+                  <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
                     {new Date(r.generatedAt).toLocaleDateString()}
                   </span>
-                  <span className="text-slate-400 text-sm">
+                  <span className="text-sm" style={{ color: 'var(--text-muted)' }}>
                     {expandedId === r.id ? '▲' : '▼'}
                   </span>
                 </div>
               </div>
             </button>
             {expandedId === r.id && (
-              <div className="px-4 pb-4 border-t border-slate-600 pt-4">
+              <div className="px-4 pb-4 border-t pt-4" style={{ borderColor: 'var(--border-color)' }}>
                 <StudyReport report={r.report} />
               </div>
             )}

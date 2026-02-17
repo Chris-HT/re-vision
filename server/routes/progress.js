@@ -79,7 +79,7 @@ router.get('/progress/:profileId/due', (req, res, next) => {
     }
     const { themes, limit } = req.query;
     const themeList = themes ? themes.split(',') : null;
-    const maxCards = limit ? parseInt(limit) : 30;
+    const maxCards = limit ? Math.min(Math.max(parseInt(limit) || 30, 1), 200) : 30;
 
     const result = getDueCards(profileId, themeList, maxCards);
     res.json(result);

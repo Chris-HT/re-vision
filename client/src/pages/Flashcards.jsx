@@ -35,6 +35,7 @@ export default function Flashcards({ profile }) {
   const presets = sessionPresets[profile?.ageGroup || 'adult'] || sessionPresets.adult;
 
   const practiceCardIds = location.state?.practiceCardIds;
+  const quickLaunchSubject = location.state?.quickLaunchSubject;
 
   // Start/stop study timer based on session state
   useEffect(() => {
@@ -67,8 +68,8 @@ export default function Flashcards({ profile }) {
     try {
       const response = await apiFetch('/api/subjects');
       const data = await response.json();
-      setSubjects(data.subjects);
-      return data.subjects;
+      setSubjects(data.subjects || []);
+      return data.subjects || [];
     } catch (error) {
       console.error('Failed to fetch subjects:', error);
     }
@@ -81,8 +82,10 @@ export default function Flashcards({ profile }) {
     }
 
     fetchSubjects().then(subs => {
-      if (subs && profile.defaultSubjects?.length > 0) {
-        setConfig({ subject: profile.defaultSubjects[0] });
+      // quickLaunchSubject (from Home page) takes priority over saved default
+      const subjectToSelect = quickLaunchSubject || profile.defaultSubjects?.[0];
+      if (subs && subjectToSelect) {
+        setConfig({ subject: subjectToSelect });
       }
     });
 

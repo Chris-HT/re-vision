@@ -77,7 +77,14 @@ pm2 save
 
 # 11. Set up PM2 to start on boot
 echo "Setting up auto-start on boot..."
-pm2 startup | tail -1 | bash 2>/dev/null || echo "Run the pm2 startup command shown above manually if it failed"
+STARTUP_OUTPUT=$(pm2 startup 2>&1)
+STARTUP_CMD=$(echo "$STARTUP_OUTPUT" | grep "^sudo")
+if [ -n "$STARTUP_CMD" ]; then
+  echo "Running: $STARTUP_CMD"
+  bash -c "$STARTUP_CMD"
+else
+  echo "Could not detect startup command. Run 'pm2 startup' manually and execute the sudo command it shows."
+fi
 
 echo ""
 echo "=== Setup complete! ==="

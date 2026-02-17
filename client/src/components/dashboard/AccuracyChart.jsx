@@ -3,9 +3,9 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 export default function AccuracyChart({ data }) {
   if (!data || data.length === 0) {
     return (
-      <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-        <h3 className="text-lg font-semibold text-white mb-4">Accuracy Over Time</h3>
-        <div className="h-64 flex items-center justify-center text-slate-400">
+      <div className="rounded-lg p-6" style={{ backgroundColor: 'var(--bg-card-solid)', border: '1px solid var(--border-color)' }}>
+        <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Accuracy Over Time</h3>
+        <div className="h-64 flex items-center justify-center" style={{ color: 'var(--text-muted)' }}>
           No data yet. Start studying to see your accuracy trend.
         </div>
       </div>
@@ -18,8 +18,8 @@ export default function AccuracyChart({ data }) {
   }));
 
   return (
-    <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-      <h3 className="text-lg font-semibold text-white mb-4">Accuracy Over Time</h3>
+    <div className="rounded-lg p-6" style={{ backgroundColor: 'var(--bg-card-solid)', border: '1px solid var(--border-color)' }}>
+      <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Accuracy Over Time</h3>
       <div className="h-64">
         <ResponsiveContainer width="100%" height="100%">
           <AreaChart data={formatted}>
@@ -33,8 +33,8 @@ export default function AccuracyChart({ data }) {
             <XAxis dataKey="label" tick={{ fill: '#94a3b8', fontSize: 12 }} />
             <YAxis domain={[0, 100]} tick={{ fill: '#94a3b8', fontSize: 12 }} />
             <Tooltip
-              contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569', borderRadius: '8px' }}
-              labelStyle={{ color: '#f1f5f9' }}
+              contentStyle={{ backgroundColor: 'var(--bg-card-solid)', border: '1px solid var(--border-color)', borderRadius: '8px' }}
+              labelStyle={{ color: 'var(--text-primary)' }}
               itemStyle={{ color: '#3b82f6' }}
               formatter={(value) => [`${value}%`, 'Accuracy']}
             />

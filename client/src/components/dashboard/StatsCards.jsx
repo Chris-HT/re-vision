@@ -29,9 +29,9 @@ export default function StatsCards({ stats }) {
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
       {cards.map((card) => (
-        <div key={card.label} className="bg-slate-800 rounded-lg p-5 border border-slate-700">
+        <div key={card.label} className="rounded-lg p-5" style={{ backgroundColor: 'var(--bg-card-solid)', border: '1px solid var(--border-color)' }}>
           <div className={`text-3xl font-bold ${card.color} mb-1`}>{card.value}</div>
-          <div className="text-sm text-slate-400">{card.label}</div>
+          <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{card.label}</div>
         </div>
       ))}
     </div>

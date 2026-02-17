@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useCallback, useEffect, useRef } from 'react';
+import { createContext, useContext, useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { apiFetch } from '../utils/api';
 
 const GamificationContext = createContext(null);
@@ -229,7 +229,7 @@ export function GamificationProvider({ profileId, ageGroup, children }) {
     }
   }, [profileId, pushReward]);
 
-  const value = {
+  const value = useMemo(() => ({
     xp, level, coins, combo, xpProgress, xpRequired,
     achievementsUnlocked, achievementsTotal,
     tokens, setTokens,
@@ -238,7 +238,16 @@ export function GamificationProvider({ profileId, ageGroup, children }) {
     awardXP, awardCoins, incrementCombo, resetCombo,
     syncToServer, fetchGamification, dismissReward,
     getComboMultiplier
-  };
+  }), [
+    xp, level, coins, combo, xpProgress, xpRequired,
+    achievementsUnlocked, achievementsTotal,
+    tokens,
+    variableRewards, dailyBonusActive,
+    rewardQueue,
+    awardXP, awardCoins, incrementCombo, resetCombo,
+    syncToServer, fetchGamification, dismissReward,
+    getComboMultiplier
+  ]);
 
   return (
     <GamificationContext.Provider value={value}>

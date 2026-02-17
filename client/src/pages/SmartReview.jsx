@@ -36,7 +36,9 @@ export default function SmartReview({ profile }) {
       navigate('/');
       return;
     }
-    loadQuestions();
+    const controller = new AbortController();
+    loadQuestions(controller.signal);
+    return () => controller.abort();
   }, [profile, navigate]);
 
   useEffect(() => {
@@ -45,14 +47,14 @@ export default function SmartReview({ profile }) {
     }
   }, [profile, fetchDue]);
 
-  const loadQuestions = async () => {
+  const loadQuestions = async (signal) => {
     try {
-      const subjectsRes = await apiFetch('/api/subjects');
+      const subjectsRes = await apiFetch('/api/subjects', { signal });
       const subjectsData = await subjectsRes.json();
 
       const allData = await Promise.all(
         subjectsData.subjects.map(s =>
-          apiFetch(`/api/subjects/${s.id}/questions`).then(r => r.json())
+          apiFetch(`/api/subjects/${s.id}/questions`, { signal }).then(r => r.json())
         )
       );
       let questions = [];
@@ -64,7 +66,7 @@ export default function SmartReview({ profile }) {
       setAllQuestions(questions);
       setCategories(cats);
     } catch (err) {
-      console.error('Failed to load questions:', err);
+      if (err.name !== 'AbortError') console.error('Failed to load questions:', err);
     }
   };
 

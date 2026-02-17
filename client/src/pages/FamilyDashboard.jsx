@@ -53,10 +53,15 @@ export default function FamilyDashboard({ profile }) {
 
         const statsResults = {};
         const reportsResults = {};
-        for (const child of data.children || []) {
-          statsResults[child.id] = await statsPromises[child.id];
-          reportsResults[child.id] = await reportsPromises[child.id];
-        }
+        const childList = data.children || [];
+        const [statsValues, reportsValues] = await Promise.all([
+          Promise.all(childList.map(child => statsPromises[child.id])),
+          Promise.all(childList.map(child => reportsPromises[child.id]))
+        ]);
+        childList.forEach((child, i) => {
+          statsResults[child.id] = statsValues[i];
+          reportsResults[child.id] = reportsValues[i];
+        });
         setChildStats(statsResults);
         setChildReports(reportsResults);
         setChildTokens(tokenMap);

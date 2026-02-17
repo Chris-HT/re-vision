@@ -6,11 +6,14 @@ export default function Achievements({ profileId }) {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!profileId) return;
+    if (!profileId) {
+      setLoading(false);
+      return;
+    }
     apiFetch(`/api/gamification/${profileId}/achievements`)
-      .then(res => res.json())
+      .then(res => res.ok ? res.json() : Promise.reject(new Error('Failed to load achievements')))
       .then(data => setAchievements(data.achievements || []))
-      .catch(() => {})
+      .catch(() => setAchievements([]))
       .finally(() => setLoading(false));
   }, [profileId]);
 

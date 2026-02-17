@@ -23,7 +23,11 @@ dotenv.config({ path: path.join(__dirname, '..', '.env') });
 const app = express();
 const PORT = process.env.PORT || 3001;
 
-app.use(cors());
+// Restrict CORS to the Vite dev server — in production the client is served from the
+// same origin so no CORS headers are needed for legitimate app traffic.
+app.use(cors({
+  origin: ['http://localhost:5173', 'http://127.0.0.1:5173']
+}));
 app.use(express.json());
 
 // Unauthenticated routes

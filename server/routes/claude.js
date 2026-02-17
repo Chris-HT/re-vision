@@ -476,6 +476,10 @@ router.post('/report', async (req, res) => {
       return res.status(400).json({ error: 'Answers array is empty', code: 'INVALID_REQUEST' });
     }
 
+    if (!Array.isArray(testData.questions) || testData.questions.length === 0) {
+      return res.status(400).json({ error: 'testData.questions must be a non-empty array', code: 'INVALID_REQUEST' });
+    }
+
     const rawAgeGroup = testData.meta?.ageGroup || 'adult';
     const ageGroup = VALID_AGE_GROUPS.has(rawAgeGroup) ? rawAgeGroup : 'adult';
     const topic = cap(testData.meta?.topic || 'General', MAX_TOPIC_LEN);

@@ -31,21 +31,24 @@ export function getProfileXP(profileId) {
 }
 
 export function awardXP(profileId, amount) {
-  db.prepare('INSERT OR IGNORE INTO profile_xp (profile_id) VALUES (?)').run(profileId);
-  db.prepare('UPDATE profile_xp SET total_xp = total_xp + ? WHERE profile_id = ?').run(amount, profileId);
-  const row = db.prepare('SELECT total_xp FROM profile_xp WHERE profile_id = ?').get(profileId);
-  const newLevel = levelFromXP(row.total_xp);
-  const oldLevel = db.prepare('SELECT level FROM profile_xp WHERE profile_id = ?').get(profileId).level;
-  db.prepare('UPDATE profile_xp SET level = ? WHERE profile_id = ?').run(newLevel, profileId);
-  const progress = xpToNextLevel(row.total_xp, newLevel);
-  return {
-    totalXp: row.total_xp,
-    level: newLevel,
-    leveledUp: newLevel > oldLevel,
-    newLevel,
-    xpProgress: progress.current,
-    xpRequired: progress.required
-  };
+  const run = db.transaction(() => {
+    db.prepare('INSERT OR IGNORE INTO profile_xp (profile_id) VALUES (?)').run(profileId);
+    db.prepare('UPDATE profile_xp SET total_xp = total_xp + ? WHERE profile_id = ?').run(amount, profileId);
+    // Single SELECT reads both total_xp and current level atomically
+    const row = db.prepare('SELECT total_xp, level FROM profile_xp WHERE profile_id = ?').get(profileId);
+    const newLevel = levelFromXP(row.total_xp);
+    db.prepare('UPDATE profile_xp SET level = ? WHERE profile_id = ?').run(newLevel, profileId);
+    const progress = xpToNextLevel(row.total_xp, newLevel);
+    return {
+      totalXp: row.total_xp,
+      level: newLevel,
+      leveledUp: newLevel > row.level,
+      newLevel,
+      xpProgress: progress.current,
+      xpRequired: progress.required
+    };
+  });
+  return run();
 }
 
 export function getSubjectXP(profileId) {

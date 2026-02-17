@@ -112,7 +112,7 @@ export default function ResultsScreen({ results, categories, onRestart, onReview
               className={`pb-3 px-1 font-medium transition-colors ${
                 activeTab === 'summary'
                   ? 'text-blue-400 border-b-2 border-blue-400'
-                  : 'hover:text-white'
+                  : 'hover:opacity-100 opacity-75'
               }`}
               style={activeTab !== 'summary' ? { color: 'var(--text-secondary)' } : undefined}
             >
@@ -123,7 +123,7 @@ export default function ResultsScreen({ results, categories, onRestart, onReview
               className={`pb-3 px-1 font-medium transition-colors ${
                 activeTab === 'categories'
                   ? 'text-blue-400 border-b-2 border-blue-400'
-                  : 'hover:text-white'
+                  : 'hover:opacity-100 opacity-75'
               }`}
               style={activeTab !== 'categories' ? { color: 'var(--text-secondary)' } : undefined}
             >
@@ -135,7 +135,7 @@ export default function ResultsScreen({ results, categories, onRestart, onReview
                 className={`pb-3 px-1 font-medium transition-colors ${
                   activeTab === 'missed'
                     ? 'text-blue-400 border-b-2 border-blue-400'
-                    : 'hover:text-white'
+                    : 'hover:opacity-100 opacity-75'
                 }`}
                 style={activeTab !== 'missed' ? { color: 'var(--text-secondary)' } : undefined}
               >

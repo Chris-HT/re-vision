@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect } from 'react';
+import { createContext, useContext, useState, useEffect, useMemo } from 'react';
 
 const ThemeContext = createContext();
 
@@ -32,14 +32,16 @@ export function ThemeProvider({
     document.documentElement.setAttribute('data-focus-mode', String(focusMode));
   }, [focusMode]);
 
+  const value = useMemo(() => ({
+    theme, setTheme,
+    fontSize, setFontSize,
+    reduceAnimations, setReduceAnimations,
+    literalLanguage, setLiteralLanguage,
+    focusMode, setFocusMode
+  }), [theme, fontSize, reduceAnimations, literalLanguage, focusMode]);
+
   return (
-    <ThemeContext.Provider value={{
-      theme, setTheme,
-      fontSize, setFontSize,
-      reduceAnimations, setReduceAnimations,
-      literalLanguage, setLiteralLanguage,
-      focusMode, setFocusMode
-    }}>
+    <ThemeContext.Provider value={value}>
       {children}
     </ThemeContext.Provider>
   );

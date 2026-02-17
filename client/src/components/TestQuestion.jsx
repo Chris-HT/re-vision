@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { apiFetch } from '../utils/api';
 import { useGamification } from '../context/GamificationContext';
 
@@ -18,8 +18,8 @@ export default function TestQuestion({
   const [markingResult, setMarkingResult] = useState(null);
   const [error, setError] = useState(null);
 
-  // Lucky question: 5% chance, determined once per question instance
-  const isLucky = useMemo(() => gam?.variableRewards && Math.random() < 0.05, []);
+  // Lucky question: 5% chance, determined once per question mount
+  const [isLucky] = useState(() => !!(gam?.variableRewards && Math.random() < 0.05));
 
   const awardForScore = (score) => {
     if (!gam) return;

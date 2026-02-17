@@ -27,10 +27,10 @@ export default function Heatmap({ data }) {
   }
   if (currentWeek.length > 0) weeks.push(currentWeek);
 
-  const maxCount = Math.max(1, ...Object.values(data));
+  const maxCount = Math.max(1, ...Object.values(data || {}));
 
   function getColor(count) {
-    if (count === 0) return 'bg-slate-700';
+    if (count === 0) return '';
     const intensity = count / maxCount;
     if (intensity <= 0.25) return 'bg-emerald-900';
     if (intensity <= 0.5) return 'bg-emerald-700';
@@ -41,10 +41,10 @@ export default function Heatmap({ data }) {
   const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', ''];
 
   return (
-    <div className="bg-slate-800 rounded-lg p-6 border border-slate-700">
-      <h3 className="text-lg font-semibold text-white mb-4">Study Activity</h3>
+    <div className="rounded-lg p-6" style={{ backgroundColor: 'var(--bg-card-solid)', border: '1px solid var(--border-color)' }}>
+      <h3 className="text-lg font-semibold mb-4" style={{ color: 'var(--text-primary)' }}>Study Activity</h3>
       <div className="flex">
-        <div className="flex flex-col justify-between mr-2 text-xs text-slate-500" style={{ height: '7rem' }}>
+        <div className="flex flex-col justify-between mr-2 text-xs" style={{ height: '7rem', color: 'var(--text-muted)' }}>
           {dayLabels.map((label, i) => (
             <span key={i} className="h-3 leading-3">{label}</span>
           ))}
@@ -62,6 +62,7 @@ export default function Heatmap({ data }) {
                 <div
                   key={day.date}
                   className={`w-3 h-3 rounded-sm ${getColor(day.count)}`}
+                  style={day.count === 0 ? { backgroundColor: 'var(--bg-input)' } : {}}
                   title={`${day.label}: ${day.count} cards`}
                 />
               ))}
@@ -69,9 +70,9 @@ export default function Heatmap({ data }) {
           ))}
         </div>
       </div>
-      <div className="flex items-center justify-end mt-3 space-x-1 text-xs text-slate-500">
+      <div className="flex items-center justify-end mt-3 space-x-1 text-xs" style={{ color: 'var(--text-muted)' }}>
         <span>Less</span>
-        <div className="w-3 h-3 rounded-sm bg-slate-700" />
+        <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: 'var(--bg-input)' }} />
         <div className="w-3 h-3 rounded-sm bg-emerald-900" />
         <div className="w-3 h-3 rounded-sm bg-emerald-700" />
         <div className="w-3 h-3 rounded-sm bg-emerald-500" />

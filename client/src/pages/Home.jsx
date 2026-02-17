@@ -152,10 +152,7 @@ export default function Home({ profile, setProfile }) {
                 {favouriteSubjects.map(subject => (
                   <button
                     key={subject.id}
-                    onClick={() => {
-                      setProfile({ ...profile, defaultSubjects: [subject.id] });
-                      navigate('/flashcards');
-                    }}
+                    onClick={() => navigate('/flashcards', { state: { quickLaunchSubject: subject.id } })}
                     className="flex items-center space-x-2 px-4 py-2 rounded-lg border transition-all hover:scale-105"
                     style={{
                       backgroundColor: 'var(--bg-card-solid)',

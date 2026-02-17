@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
 
 const StudyTimerContext = createContext();
 
@@ -51,19 +51,21 @@ export function StudyTimerProvider({ children, breakInterval = 15 }) {
     setIsStudying(true);
   }, []);
 
+  const value = useMemo(() => ({
+    studySeconds,
+    isStudying,
+    breakDue,
+    breakDismissed,
+    startStudying,
+    stopStudying,
+    acknowledgeBreak,
+    dismissBreak,
+    resumeFromBreak,
+    breakInterval
+  }), [studySeconds, isStudying, breakDue, breakDismissed, startStudying, stopStudying, acknowledgeBreak, dismissBreak, resumeFromBreak, breakInterval]);
+
   return (
-    <StudyTimerContext.Provider value={{
-      studySeconds,
-      isStudying,
-      breakDue,
-      breakDismissed,
-      startStudying,
-      stopStudying,
-      acknowledgeBreak,
-      dismissBreak,
-      resumeFromBreak,
-      breakInterval
-    }}>
+    <StudyTimerContext.Provider value={value}>
       {children}
     </StudyTimerContext.Provider>
   );
