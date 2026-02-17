@@ -3,63 +3,9 @@ import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
 import { getProfileForLogin, setPin, getLoginProfiles, getChildren, getAllProfiles, createProfile, updateProfile, deleteProfile } from '../dal/auth.js';
 import { authenticate, requireRole, getJwtSecret } from '../middleware/auth.js';
+import { isLocked, recordAttempt, clearAttempts } from '../dal/rateLimits.js';
 
 const router = express.Router();
-
-// In-memory login rate limiter: profileId → { failures, lockedUntil }
-const loginAttempts = new Map();
-
-// Separate rate limiter for set-pin: 3 attempts → 5-min lockout.
-// Counts every call (no concept of "correct" before first PIN is set).
-const setPinAttempts = new Map();
-
-function checkSetPinLock(profileId) {
-  const entry = setPinAttempts.get(profileId);
-  if (!entry) return false;
-  if (entry.lockedUntil && Date.now() < entry.lockedUntil) return true;
-  if (entry.lockedUntil && Date.now() >= entry.lockedUntil) {
-    setPinAttempts.delete(profileId);
-    return false;
-  }
-  return false;
-}
-
-function recordSetPinAttempt(profileId) {
-  const entry = setPinAttempts.get(profileId) || { attempts: 0, lockedUntil: null };
-  entry.attempts++;
-  if (entry.attempts >= 3) {
-    entry.lockedUntil = Date.now() + 5 * 60 * 1000;
-  }
-  setPinAttempts.set(profileId, entry);
-}
-
-function clearSetPinAttempts(profileId) {
-  setPinAttempts.delete(profileId);
-}
-
-function checkLoginLock(profileId) {
-  const entry = loginAttempts.get(profileId);
-  if (!entry) return false;
-  if (entry.lockedUntil && Date.now() < entry.lockedUntil) return true;
-  if (entry.lockedUntil && Date.now() >= entry.lockedUntil) {
-    loginAttempts.delete(profileId);
-    return false;
-  }
-  return false;
-}
-
-function recordFailure(profileId) {
-  const entry = loginAttempts.get(profileId) || { failures: 0, lockedUntil: null };
-  entry.failures++;
-  if (entry.failures >= 5) {
-    entry.lockedUntil = Date.now() + 5 * 60 * 1000; // 5 minutes
-  }
-  loginAttempts.set(profileId, entry);
-}
-
-function clearFailures(profileId) {
-  loginAttempts.delete(profileId);
-}
 
 function toAuthProfile(profile) {
   return {
@@ -92,7 +38,7 @@ router.post('/login', async (req, res, next) => {
       return res.status(400).json({ error: 'profileId is required' });
     }
 
-    if (checkLoginLock(profileId)) {
+    if (isLocked('login:' + profileId)) {
       return res.status(429).json({
         error: 'Too many failed attempts. Try again in 5 minutes.',
         code: 'LOCKED'
@@ -115,9 +61,8 @@ router.post('/login', async (req, res, next) => {
 
     const valid = await bcrypt.compare(pin, profile.pin_hash);
     if (!valid) {
-      recordFailure(profileId);
-      const entry = loginAttempts.get(profileId);
-      const attemptsRemaining = Math.max(0, 5 - (entry?.failures || 0));
+      const count = recordAttempt('login:' + profileId, 5, 5 * 60 * 1000);
+      const attemptsRemaining = Math.max(0, 5 - count);
       return res.status(401).json({
         error: 'Incorrect PIN',
         attemptsRemaining,
@@ -125,7 +70,7 @@ router.post('/login', async (req, res, next) => {
       });
     }
 
-    clearFailures(profileId);
+    clearAttempts('login:' + profileId);
 
     const token = jwt.sign(
       { profileId: profile.id, role: profile.role, name: profile.name },
@@ -154,7 +99,7 @@ router.post('/set-pin', async (req, res, next) => {
       return res.status(400).json({ error: 'PIN must be 4-6 digits' });
     }
 
-    if (checkSetPinLock(profileId)) {
+    if (isLocked('setpin:' + profileId)) {
       return res.status(429).json({
         error: 'Too many attempts. Try again in 5 minutes.',
         code: 'LOCKED'
@@ -166,7 +111,7 @@ router.post('/set-pin', async (req, res, next) => {
       return res.status(404).json({ error: 'Profile not found' });
     }
 
-    recordSetPinAttempt(profileId);
+    recordAttempt('setpin:' + profileId, 3, 5 * 60 * 1000);
 
     if (profile.pin_hash) {
       return res.status(400).json({ error: 'PIN already set. Use /api/auth/change-pin to change it.' });
@@ -174,7 +119,7 @@ router.post('/set-pin', async (req, res, next) => {
 
     const hash = await bcrypt.hash(pin, 10);
     setPin(profileId, hash);
-    clearSetPinAttempts(profileId);
+    clearAttempts('setpin:' + profileId);
 
     const token = jwt.sign(
       { profileId: profile.id, role: profile.role, name: profile.name },

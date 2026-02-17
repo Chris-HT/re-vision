@@ -156,6 +156,16 @@ db.exec(`
   );
 `);
 
+// Rate limiting table (persists across restarts)
+db.exec(`
+  CREATE TABLE IF NOT EXISTS rate_limits (
+    key TEXT PRIMARY KEY,
+    count INTEGER NOT NULL DEFAULT 0,
+    locked_until INTEGER,
+    window_expires INTEGER
+  );
+`);
+
 // Seed achievements
 const seedAchievements = [
   ['first-card',    'First Steps',    'Review your first card',    '👶', 'cards',   1],

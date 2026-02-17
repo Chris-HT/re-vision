@@ -10,6 +10,7 @@ import { canAccessProfile } from '../middleware/auth.js';
 import { awardXP, awardCoins, checkAndUnlockAchievements } from '../dal/gamification.js';
 import { calculateTokenReward, awardTokens, recordTestCompletion } from '../dal/tokens.js';
 import { incrementQuestProgress, updateLastSessionDate as updateQuestSessionDate } from '../dal/quests.js';
+import { checkAndIncrementCallLimit } from '../dal/rateLimits.js';
 
 const router = express.Router();
 
@@ -38,39 +39,9 @@ function getAnthropicClient() {
   return anthropicClient;
 }
 
-// Per-profile rate limiting: each profile gets their own counter
-const RATE_LIMIT_PER_PROFILE = 10;
-const RATE_LIMIT_GLOBAL = 30;
-const RATE_LIMIT_WINDOW = 3600000; // 1 hour
-
-const profileLimits = new Map(); // profileId -> { calls, resetTime }
-let globalCalls = 0;
-let globalResetTime = Date.now() + RATE_LIMIT_WINDOW;
-
 function checkRateLimit(profileId) {
-  const now = Date.now();
-
-  // Reset global counter if window expired
-  if (now > globalResetTime) {
-    globalCalls = 0;
-    globalResetTime = now + RATE_LIMIT_WINDOW;
-  }
-
-  // Check global limit
-  if (globalCalls >= RATE_LIMIT_GLOBAL) return false;
-
-  // Per-profile limit
-  if (profileId) {
-    let entry = profileLimits.get(profileId);
-    if (!entry || now > entry.resetTime) {
-      entry = { calls: 0, resetTime: now + RATE_LIMIT_WINDOW };
-      profileLimits.set(profileId, entry);
-    }
-    if (entry.calls >= RATE_LIMIT_PER_PROFILE) return false;
-    entry.calls++;
-  }
-
-  globalCalls++;
+  if (!checkAndIncrementCallLimit('_global', 30, 3600000)) return false;
+  if (profileId && !checkAndIncrementCallLimit('profile:' + profileId, 10, 3600000)) return false;
   return true;
 }
 
@@ -293,7 +264,6 @@ Rules:
     console.error('Generation error:', error);
     res.status(500).json({
       error: 'Failed to generate questions',
-      details: process.env.NODE_ENV !== 'production' ? error.message : undefined,
       code: 'API_ERROR',
       userMessage: 'Something went wrong. Try again?'
     });
@@ -414,7 +384,6 @@ Mark this answer now. Return only JSON.`;
     console.error('Marking error:', error);
     res.status(500).json({
       error: 'Failed to mark answer',
-      details: process.env.NODE_ENV !== 'production' ? error.message : undefined,
       code: 'API_ERROR',
       userMessage: 'Something went wrong. Try again?'
     });
@@ -639,7 +608,6 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
     console.error('Report generation error:', error);
     res.status(500).json({
       error: 'Failed to generate report',
-      details: process.env.NODE_ENV !== 'production' ? error.message : undefined,
       code: 'API_ERROR',
       userMessage: 'Something went wrong generating the report. Try again?'
     });
