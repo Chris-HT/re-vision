@@ -67,6 +67,7 @@ export default function TestConfig({ profile, onStartTest, previousTests, litera
         throw new Error(data.userMessage || data.error || 'Failed to generate questions');
       }
 
+      setLoading(false);
       onStartTest(data);
     } catch (err) {
       setError(err.message);
@@ -81,11 +82,12 @@ export default function TestConfig({ profile, onStartTest, previousTests, litera
     try {
       const response = await apiFetch(`/api/generated/${cacheKey}`);
       const data = await response.json();
-      
+
       if (!response.ok) {
         throw new Error('Failed to load test');
       }
 
+      setLoading(false);
       onStartTest(data);
     } catch (err) {
       setError(err.message);

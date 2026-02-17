@@ -48,7 +48,7 @@ export default function WeakestCards({ cards, onPractice }) {
 
             {expandedId === card.cardId && (
               <div className="mt-3 pt-3 border-t border-slate-600">
-                <p className="text-slate-300 text-sm">{card.question}</p>
+                <p className="text-slate-300 text-sm">{card.answer}</p>
                 {card.lastSeen && (
                   <p className="text-xs text-slate-500 mt-2">
                     Last seen: {new Date(card.lastSeen).toLocaleDateString()}

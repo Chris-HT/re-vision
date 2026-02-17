@@ -110,10 +110,14 @@ export function updateLearningProfile(profileId, reportData, topic) {
     }
   }
 
-  // Merge strong areas (case-insensitive keys)
+  // Merge strong areas (case-insensitive keys).
+  // Skip historical strong areas that are now in weakMap (re-identified as weak this session).
   const strongMap = new Map();
   for (const area of current.strongAreas) {
-    strongMap.set(area.area.toLowerCase(), area);
+    const key = area.area.toLowerCase();
+    if (!weakMap.has(key)) {
+      strongMap.set(key, area);
+    }
   }
   for (const s of strongSet) {
     strongMap.set(s.toLowerCase(), {

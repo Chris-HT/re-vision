@@ -69,7 +69,7 @@ export default function TestQuestion({
           question: question.question,
           correctAnswer: question.answer,
           studentAnswer: freeTextAnswer,
-          ageGroup: profile.ageGroup,
+          ageGroup: profile?.ageGroup || 'adult',
           literalLanguage: !!literalLanguage
         })
       });
@@ -153,7 +153,7 @@ export default function TestQuestion({
 
         {question.format === 'multiple_choice' ? (
           <div className="space-y-3">
-            {question.options.map((option, index) => {
+            {(question.options || []).map((option, index) => {
               const optionLetter = option.substring(0, 1);
               const isSelected = selectedOption === optionLetter;
               const isCorrect = submitted && optionLetter === question.correctOption;

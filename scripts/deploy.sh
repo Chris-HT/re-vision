@@ -29,9 +29,9 @@ if [ ! -f client/dist/index.html ]; then
   exit 1
 fi
 
-# Restart the server
+# Restart the server (start if not already registered with PM2)
 echo "Restarting server..."
-pm2 restart revision
+pm2 describe revision > /dev/null 2>&1 && pm2 restart revision || pm2 start ecosystem.config.cjs
 
 echo ""
 echo "=== Deployed! ==="

@@ -46,8 +46,12 @@ export function updateCard(card, result) {
     card.repetitions = 0;
     card.interval = 1;
     card.easeFactor = Math.max(1.3, card.easeFactor - 0.2);
+  } else if (result === 'skipped') {
+    // Skipped means the user doesn't know the answer — reschedule for tomorrow
+    // regardless of the card's current interval (don't let a 30-day card stay
+    // hidden for 30 more days just because it was skipped)
+    card.interval = 1;
   }
-  // "skipped" — don't change interval or ease, just record it
 
   card.lastSeen = now;
   card.nextDue = addDays(now, card.interval || 1);

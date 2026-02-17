@@ -45,7 +45,7 @@ export default function TestResults({
       const response = await apiFetch('/api/generate/save', {
         method: 'POST',
         body: JSON.stringify({
-          subjectId: testData.meta.topic.toLowerCase().replace(/\s+/g, '-'),
+          subjectId: (testData.meta?.topic || 'general').toLowerCase().replace(/\s+/g, '-'),
           themeId: 'generated',
           questions: testData.questions
         })
@@ -176,7 +176,8 @@ export default function TestResults({
           
           {testData.questions.map((question, index) => {
             const answer = answers[index];
-            
+            if (!answer) return null;
+
             return (
               <div key={question.id} className="rounded-lg p-4" style={{ backgroundColor: 'var(--bg-input)' }}>
                 <div className="flex justify-between items-start mb-3">
@@ -194,7 +195,7 @@ export default function TestResults({
                   <div className="flex items-start">
                     <span className="mr-2" style={{ color: 'var(--text-secondary)' }}>Your answer:</span>
                     <span className="flex-1" style={{ color: 'var(--text-secondary)' }}>
-                      {answer.format === 'multiple_choice' 
+                      {answer.format === 'multiple_choice'
                         ? question.options?.find(o => o.startsWith(answer.studentAnswer))
                         : answer.studentAnswer}
                     </span>

@@ -13,5 +13,7 @@ export function isFeatureUnlocked(feature, level, ageGroup) {
     variableRewards: 3
   };
 
-  return level >= (gates[feature] || 1);
+  const requiredLevel = gates[feature];
+  if (requiredLevel === undefined) return false;
+  return level >= requiredLevel;
 }
