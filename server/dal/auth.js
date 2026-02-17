@@ -53,7 +53,11 @@ export function isParentOf(parentId, childId) {
 
 export function getAllProfiles() {
   const rows = db.prepare(
-    'SELECT id, name, icon, age_group, role, pin_hash FROM profiles ORDER BY id'
+    `SELECT p.id, p.name, p.icon, p.age_group, p.role, p.pin_hash, p.default_subjects,
+            pc.parent_id
+     FROM profiles p
+     LEFT JOIN parent_child pc ON pc.child_id = p.id
+     ORDER BY p.id`
   ).all();
   return rows.map(r => ({
     id: r.id,
@@ -61,7 +65,11 @@ export function getAllProfiles() {
     icon: r.icon,
     ageGroup: r.age_group,
     role: r.role,
-    hasPin: !!r.pin_hash
+    hasPin: !!r.pin_hash,
+    parentId: r.parent_id || null,
+    defaultSubjects: (() => {
+      try { return JSON.parse(r.default_subjects || '[]'); } catch { return []; }
+    })()
   }));
 }
 
