@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useProgress } from '../hooks/useProgress';
+import { useGamification } from '../context/GamificationContext';
+import { isFeatureUnlocked } from '../utils/featureGating';
 import ExportPDFButton, { exportProgressPDF } from '../components/ExportPDF';
 import StatsCards from '../components/dashboard/StatsCards';
 import AccuracyChart from '../components/dashboard/AccuracyChart';
@@ -9,6 +11,7 @@ import WeakestCards from '../components/dashboard/WeakestCards';
 import Heatmap from '../components/dashboard/Heatmap';
 import TestReports from '../components/dashboard/TestReports';
 import Achievements from '../components/dashboard/Achievements';
+import QuestTracker from '../components/dashboard/QuestTracker';
 
 export default function Dashboard({ profile }) {
   const navigate = useNavigate();
@@ -20,6 +23,7 @@ export default function Dashboard({ profile }) {
   const effectiveProfileId = isViewingChild ? viewProfileId : profile?.id;
 
   const { stats, loading, fetchStats } = useProgress(effectiveProfileId);
+  const gam = useGamification();
 
   useEffect(() => {
     if (!profile) {
@@ -63,10 +67,19 @@ export default function Dashboard({ profile }) {
           {/* Header Stats */}
           <StatsCards stats={stats} />
 
-          {/* Achievements */}
-          <div className="mt-6">
-            <Achievements profileId={effectiveProfileId} />
-          </div>
+          {/* Quest Tracker — gated by progressive disclosure */}
+          {isFeatureUnlocked('quests', gam?.level || 1, profile?.ageGroup) && (
+            <div className="mt-6">
+              <QuestTracker profileId={effectiveProfileId} />
+            </div>
+          )}
+
+          {/* Achievements — gated by progressive disclosure */}
+          {isFeatureUnlocked('achievements', gam?.level || 1, profile?.ageGroup) && (
+            <div className="mt-6">
+              <Achievements profileId={effectiveProfileId} />
+            </div>
+          )}
 
           {/* Charts Row */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">

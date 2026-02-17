@@ -9,6 +9,7 @@ import {
 import { canAccessProfile } from '../middleware/auth.js';
 import { awardXP, awardCoins, checkAndUnlockAchievements } from '../dal/gamification.js';
 import { calculateTokenReward, awardTokens, recordTestCompletion } from '../dal/tokens.js';
+import { incrementQuestProgress, updateLastSessionDate as updateQuestSessionDate } from '../dal/quests.js';
 
 const router = express.Router();
 
@@ -533,10 +534,22 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
     }
     recordTestCompletion(profileId, testKey, totalScore);
 
+    // Quest progress: test completion + score + session + subject
+    let questCompleted = [];
+    try {
+      questCompleted.push(...incrementQuestProgress(profileId, 'tests_completed', 1));
+      questCompleted.push(...incrementQuestProgress(profileId, 'sessions_completed', 1));
+      if (totalScore >= 80) {
+        questCompleted.push(...incrementQuestProgress(profileId, 'score_above_80', 1));
+      }
+      questCompleted.push(...incrementQuestProgress(profileId, 'subjects_studied', 1));
+      updateQuestSessionDate(profileId);
+    } catch { /* quest system non-critical */ }
+
     res.json({
       success: true, report: reportData, sessionId,
       gamification: {
-        xp: xpResult, newAchievements,
+        xp: xpResult, newAchievements, questCompleted,
         tokenReward: { amount: tokenCalc.amount, reason: tokenCalc.reason, newBalance: tokenNewBalance }
       }
     });

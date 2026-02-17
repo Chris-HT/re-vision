@@ -7,7 +7,7 @@ export function useGamification() {
   return useContext(GamificationContext);
 }
 
-export function GamificationProvider({ profileId, children }) {
+export function GamificationProvider({ profileId, ageGroup, children }) {
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
   const [xpProgress, setXpProgress] = useState(0);
@@ -18,6 +18,11 @@ export function GamificationProvider({ profileId, children }) {
   const [achievementsUnlocked, setAchievementsUnlocked] = useState(0);
   const [achievementsTotal, setAchievementsTotal] = useState(10);
   const [tokens, setTokens] = useState(0);
+
+  // Variable rewards state
+  const [variableRewards, setVariableRewards] = useState(true);
+  const [dailyBonusActive, setDailyBonusActive] = useState(false);
+  const dailyBonusUsedThisSession = useRef(false);
 
   // Accumulated awards to sync to server
   const pendingXp = useRef(0);
@@ -44,6 +49,29 @@ export function GamificationProvider({ profileId, children }) {
         const tokenData = await tokenRes.json();
         setTokens(tokenData.tokens);
       }
+      // Fetch reward state for variable rewards
+      const rewardRes = await apiFetch(`/api/progress/${profileId}/reward-state`);
+      if (rewardRes.ok) {
+        const rewardData = await rewardRes.json();
+        setVariableRewards(rewardData.variableRewards);
+
+        // Comeback bonus: auto-award 50 coins if eligible
+        if (rewardData.variableRewards && rewardData.comebackBonus?.eligible) {
+          pendingCoins.current += 50;
+          setCoins(prev => prev + 50);
+          const id = ++idCounter.current;
+          setRewardQueue(q => [...q, {
+            id, type: 'coins', amount: 50,
+            label: `+50 coins Welcome Back! (${rewardData.comebackBonus.daysSinceLastSession} days away)`
+          }]);
+        }
+
+        // Daily bonus availability
+        if (rewardData.variableRewards && rewardData.dailyBonus?.available) {
+          setDailyBonusActive(true);
+          dailyBonusUsedThisSession.current = false;
+        }
+      }
     } catch {
       // Non-critical
     }
@@ -55,6 +83,7 @@ export function GamificationProvider({ profileId, children }) {
     setRewardQueue([]);
     pendingXp.current = 0;
     pendingCoins.current = 0;
+    dailyBonusUsedThisSession.current = false;
   }, [profileId, fetchGamification]);
 
   const pushReward = useCallback((reward) => {
@@ -74,7 +103,21 @@ export function GamificationProvider({ profileId, children }) {
 
   const awardXP = useCallback((amount, label) => {
     const multiplier = getComboMultiplier(combo);
-    const finalAmount = Math.round(amount * multiplier);
+    let finalAmount = Math.round(amount * multiplier);
+
+    // Daily bonus: 2x XP on first XP award of the session
+    let dailyBonusApplied = false;
+    if (dailyBonusActive && !dailyBonusUsedThisSession.current) {
+      finalAmount *= 2;
+      dailyBonusApplied = true;
+      dailyBonusUsedThisSession.current = true;
+      setDailyBonusActive(false);
+      // Mark on server
+      if (profileId) {
+        apiFetch(`/api/progress/${profileId}/daily-bonus-used`, { method: 'POST' }).catch(() => {});
+      }
+    }
+
     pendingXp.current += finalAmount;
 
     setXp(prev => prev + finalAmount);
@@ -88,6 +131,17 @@ export function GamificationProvider({ profileId, children }) {
           // Approximate next level XP requirement
           setXpRequired(Math.floor(100 * Math.pow(1.5, newLevel - 1)));
           pushReward({ type: 'level-up', amount: newLevel, label: `Level ${newLevel}` });
+
+          // Progressive disclosure unlock notifications (non-adult)
+          if (ageGroup && ageGroup !== 'adult') {
+            if (newLevel === 3) {
+              pushReward({ type: 'unlock', label: 'Quests Unlocked!', description: 'You can now track daily and weekly quests' });
+            }
+            if (newLevel === 5) {
+              pushReward({ type: 'unlock', label: 'Achievements & Streaks Unlocked!', description: 'View your achievements and streak progress' });
+            }
+          }
+
           return newLevel;
         });
         return overflow;
@@ -95,11 +149,15 @@ export function GamificationProvider({ profileId, children }) {
       return newProgress;
     });
 
-    const displayLabel = multiplier > 1
-      ? `+${finalAmount} XP (${multiplier}x combo)`
-      : label || `+${finalAmount} XP`;
-    pushReward({ type: 'xp', amount: finalAmount, label: displayLabel });
-  }, [combo, xpRequired, getComboMultiplier, pushReward]);
+    if (dailyBonusApplied) {
+      pushReward({ type: 'xp', amount: finalAmount, label: `+${finalAmount} XP (Daily Bonus! 2x)` });
+    } else {
+      const displayLabel = multiplier > 1
+        ? `+${finalAmount} XP (${multiplier}x combo)`
+        : label || `+${finalAmount} XP`;
+      pushReward({ type: 'xp', amount: finalAmount, label: displayLabel });
+    }
+  }, [combo, xpRequired, getComboMultiplier, pushReward, dailyBonusActive, profileId, ageGroup]);
 
   const awardCoins = useCallback((amount, label) => {
     pendingCoins.current += amount;
@@ -160,6 +218,7 @@ export function GamificationProvider({ profileId, children }) {
     xp, level, coins, combo, xpProgress, xpRequired,
     achievementsUnlocked, achievementsTotal,
     tokens, setTokens,
+    variableRewards, dailyBonusActive,
     rewardQueue,
     awardXP, awardCoins, incrementCombo, resetCombo,
     syncToServer, fetchGamification, dismissReward,

@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { apiFetch } from '../utils/api';
 import { useTheme } from '../context/ThemeContext';
+import { useGamification } from '../context/GamificationContext';
 
 export default function PreferencesPanel({ profileId, profile }) {
   const {
@@ -9,8 +10,10 @@ export default function PreferencesPanel({ profileId, profile }) {
     literalLanguage, setLiteralLanguage,
     focusMode, setFocusMode
   } = useTheme();
+  const gam = useGamification();
   const [breakInterval, setBreakInterval] = useState(profile?.breakInterval ?? 15);
   const [sessionPreset, setSessionPreset] = useState(profile?.sessionPreset || 'standard');
+  const [varRewards, setVarRewards] = useState(profile?.variableRewards !== false);
   const [isOpen, setIsOpen] = useState(false);
   const panelRef = useRef(null);
 
@@ -63,6 +66,12 @@ export default function PreferencesPanel({ profileId, profile }) {
   const handleSessionPreset = (value) => {
     setSessionPreset(value);
     persist({ sessionPreset: value });
+  };
+
+  const handleVariableRewards = () => {
+    const next = !varRewards;
+    setVarRewards(next);
+    persist({ variableRewards: next ? 1 : 0 });
   };
 
   const fontSizes = [
@@ -187,6 +196,29 @@ export default function PreferencesPanel({ profileId, profile }) {
             </button>
             <p className="text-xs mt-1 px-1" style={{ color: 'var(--text-muted)' }}>
               Hides navigation and decorations during study
+            </p>
+          </div>
+
+          {/* Variable rewards */}
+          <div>
+            <button
+              onClick={handleVariableRewards}
+              className="w-full flex items-center justify-between py-2 px-3 rounded-md transition-colors"
+              style={{ backgroundColor: 'var(--bg-input)' }}
+            >
+              <span className="text-sm" style={{ color: 'var(--text-primary)' }}>
+                Variable rewards
+              </span>
+              <span className={`w-9 h-5 rounded-full relative transition-colors ${
+                varRewards ? 'bg-blue-600' : 'bg-slate-500'
+              }`}>
+                <span className={`absolute top-0.5 w-4 h-4 rounded-full bg-white transition-transform ${
+                  varRewards ? 'left-[18px]' : 'left-0.5'
+                }`} />
+              </span>
+            </button>
+            <p className="text-xs mt-1 px-1" style={{ color: 'var(--text-muted)' }}>
+              Lucky questions, daily bonus, comeback rewards
             </p>
           </div>
 

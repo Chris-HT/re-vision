@@ -32,6 +32,17 @@ export default function RewardRenderer() {
     );
   }
 
+  if (current.type === 'unlock') {
+    return (
+      <AchievementToast
+        icon="🔓"
+        label={current.label}
+        description={current.description}
+        onDismiss={gam.dismissReward}
+      />
+    );
+  }
+
   // xp or coins
   return (
     <RewardPopup

@@ -37,7 +37,8 @@ export function updateProfile(profileId, updates) {
     literalLanguage: 'literal_language',
     focusMode: 'focus_mode',
     breakInterval: 'break_interval',
-    sessionPreset: 'session_preset'
+    sessionPreset: 'session_preset',
+    variableRewards: 'variable_rewards'
   };
 
   const sets = [];
@@ -76,6 +77,7 @@ function toProfile(row) {
     literalLanguage: !!row.literal_language,
     focusMode: !!row.focus_mode,
     breakInterval: row.break_interval ?? 15,
-    sessionPreset: row.session_preset || 'standard'
+    sessionPreset: row.session_preset || 'standard',
+    variableRewards: row.variable_rewards !== undefined ? !!row.variable_rewards : true
   };
 }

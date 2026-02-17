@@ -8,6 +8,7 @@ import FlashcardGenerationWizard from '../components/FlashcardGenerationWizard';
 import { useQuestions } from '../hooks/useQuestions';
 import { useStudyTimer } from '../context/StudyTimerContext';
 import SessionPreview from '../components/SessionPreview';
+import StepIndicator from '../components/StepIndicator';
 
 export default function Flashcards({ profile }) {
   const navigate = useNavigate();
@@ -151,9 +152,14 @@ export default function Flashcards({ profile }) {
     return 0;
   };
 
+  const flashcardSteps = ['Select', 'Preview', 'Study', 'Results'];
+
   if (showResults && sessionResults) {
     return (
       <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
+        <div className="max-w-4xl mx-auto px-4 mb-2">
+          <StepIndicator steps={flashcardSteps} currentStep={3} />
+        </div>
         <ResultsScreen
           results={sessionResults}
           categories={categories}
@@ -170,6 +176,9 @@ export default function Flashcards({ profile }) {
     return (
       <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
         <div className="container mx-auto px-4">
+          <div className="max-w-4xl mx-auto mb-2">
+            <StepIndicator steps={flashcardSteps} currentStep={1} />
+          </div>
           <SessionPreview
             questionCount={pendingQuestions.length}
             format="flashcard"
@@ -187,6 +196,9 @@ export default function Flashcards({ profile }) {
   if (sessionQuestions) {
     return (
       <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
+        <div className="max-w-4xl mx-auto px-4 mb-2">
+          <StepIndicator steps={flashcardSteps} currentStep={2} />
+        </div>
         <FlashcardDeck
           questions={sessionQuestions}
           categories={categories}

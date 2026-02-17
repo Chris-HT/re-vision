@@ -118,6 +118,8 @@ All data is stored in SQLite (`data/revision.db`) with these tables:
 - **achievements** + **profile_achievements** (achievement definitions and per-user unlocks)
 - **profile_tokens** + **token_transactions** + **token_test_history** (family token system)
 - **weekly_streaks** (forgiving weekly streak tracking — 4-of-7 days)
+- **quest_definitions** + **profile_quests** (daily/weekly quest system)
+- **profile_reward_state** (variable rewards: daily bonus, session tracking)
 
 The DAL layer (`server/dal/`) provides functions that return JSON shapes matching the original API responses, so the frontend requires zero changes.
 
@@ -143,7 +145,10 @@ See `server/db/schema.sql` for full schema. Key tables:
 - `token_transactions`: id, profile_id, amount, reason, session_id, created_at
 - `token_test_history`: profile_id + test_key (PK), times_completed, best_score
 - `weekly_streaks`: profile_id (PK), current_weekly_streak, longest_weekly_streak, week_study_days (JSON), last_week_completed, streak_freezes
-- `profiles` (engagement columns added via ALTER): focus_mode, break_interval, session_preset
+- `profiles` (engagement columns added via ALTER): focus_mode, break_interval, session_preset, variable_rewards
+- `quest_definitions`: id (PK), type (daily/weekly), title, description, target, metric, xp_reward, coin_reward (8 seeded)
+- `profile_quests`: id (autoincrement), profile_id, quest_id, progress, completed, assigned_date, completed_at, UNIQUE(profile_id, quest_id, assigned_date)
+- `profile_reward_state`: profile_id (PK), last_session_date, daily_bonus_used, variable_rewards
 
 ### Migration
 
@@ -183,6 +188,9 @@ Original JSON files are preserved in `data/` as backup. To re-migrate:
 - `GET /api/progress/:profileId/due` - Get cards due for review (spaced repetition)
 - `GET /api/progress/:profileId/stats` - Get learning statistics and analytics
 - `GET /api/progress/:profileId/weekly-streak` - Get weekly streak data (currentWeeklyStreak, daysStudiedThisWeek, etc.)
+- `GET /api/progress/:profileId/quests` - Get active quests (auto-assigns daily/weekly if needed). Uses `canAccessProfile`.
+- `GET /api/progress/:profileId/reward-state` - Get reward state (daily bonus, comeback bonus availability). Uses `canAccessProfile`.
+- `POST /api/progress/:profileId/daily-bonus-used` - Mark daily bonus as used. Uses `canAccessProfile`.
 
 ### Gamification API (`server/routes/gamification.js`) — authenticated
 - `GET /api/gamification/:profileId` - Returns XP, level, coins, achievement counts. Uses `canAccessProfile`.
@@ -377,13 +385,27 @@ Comprehensive review addressing 24 issues across security, bugs, performance, an
 - **New preferences**: Break interval, session preset, and focus mode added to `PreferencesPanel` and persisted to profile
 - **Database**: `weekly_streaks` table + 3 new profile columns (`focus_mode`, `break_interval`, `session_preset`)
 
+### Phase 7e (Complete)
+- **Daily & weekly quests**: 3 random daily quests assigned each day + 1 weekly mission per ISO week; quest progress tracked server-side in `profile_quests` table; 8 seeded quest definitions covering cards reviewed, correct answers, tests completed, subjects studied, and score thresholds; rewards: XP + coins on quest completion
+- **Quest endpoints**: `GET /api/progress/:profileId/quests` (auto-assigns if needed), `GET /api/progress/:profileId/reward-state`, `POST /api/progress/:profileId/daily-bonus-used`
+- **Quest hooks**: Card review (`PUT /api/progress/:profileId/card/:cardId`) increments `cards_reviewed` and `correct_answers`; test report (`POST /api/report`) increments `tests_completed`, `sessions_completed`, `score_above_80`, and `subjects_studied`
+- **QuestTracker**: Dashboard component showing active quests with progress bars, reward previews, and completion status
+- **Variable rewards** (opt-in via preferences toggle):
+  - Lucky questions: 5% random chance per question; golden badge shown; double coins on correct answer
+  - Daily bonus: First XP award of the day applies 2x multiplier; tracked via `profile_reward_state` table
+  - Comeback bonus: 3+ days away triggers +50 coins "Welcome Back!" on next login
+- **Progressive disclosure**: Primary/secondary age groups unlock features by level (Level 1: XP+coins, Level 3: quests+variable rewards, Level 5: achievements+streaks); adults see everything from level 1; `isFeatureUnlocked()` utility in `client/src/utils/featureGating.js`; unlock notifications pushed via `GamificationContext` on level-up
+- **Step indicators**: `StepIndicator` component shows multi-step flow progress in DynamicTest (Configure→Preview→Test→Results), Flashcards (Select→Preview→Study→Results), and SmartReview (Select→Preview→Review→Results)
+- **New preferences**: Variable rewards toggle added to `PreferencesPanel`; persisted as `variable_rewards` profile column
+- **Database**: `quest_definitions` (8 seeded), `profile_quests` (assignment + progress), `profile_reward_state` (daily bonus, session tracking), + `variable_rewards` profile column
+
 ## Important Conventions
 
 ### File Organization
 - **Components**: Reusable UI elements
   - Core: `FlashcardDeck`, `ConfigPanel`, `Navbar`, `PinInput`
-  - Dashboard: `StatsCards`, `AccuracyChart`, `CategoryStrength`, `WeakestCards`, `Heatmap`, `TestReports`, `Achievements`
-  - Features: `ExportPDF`, `ImportExport`, `Timer`, `ThemeSwitcher`, `ColorPresets`, `StudyReport`, `XPBar`, `CoinCounter`, `TokenCounter`, `BreakReminder`, `SessionPreview`, `FocusModeToggle`
+  - Dashboard: `StatsCards`, `AccuracyChart`, `CategoryStrength`, `WeakestCards`, `Heatmap`, `TestReports`, `Achievements`, `QuestTracker`
+  - Features: `ExportPDF`, `ImportExport`, `Timer`, `ThemeSwitcher`, `ColorPresets`, `StudyReport`, `XPBar`, `CoinCounter`, `TokenCounter`, `BreakReminder`, `SessionPreview`, `FocusModeToggle`, `StepIndicator`
   - Gamification: `RewardPopup`, `LevelUpModal`, `AchievementToast`, `RewardRenderer`
   - Wizards: `FlashcardGenerationWizard`, `TestConfig`, `TestQuestion`, `TestResults`
 - **Pages**: Route-level components
@@ -394,15 +416,16 @@ Comprehensive review addressing 24 issues across security, bugs, performance, an
   - `useTimer` - Exam timer functionality
 - **Context**: React context providers
   - `ThemeContext` - Theme switching (dark/light/high contrast), focus mode
-  - `GamificationContext` - XP, level, coins, combo, reward queue, server sync
+  - `GamificationContext` - XP, level, coins, combo, reward queue, server sync, variable rewards, daily bonus
   - `StudyTimerContext` - Cumulative study time tracking, break reminder state
 - **Utils**: Frontend utilities
   - `api.js` - Authenticated fetch wrapper (`apiFetch`)
+  - `featureGating.js` - Progressive disclosure level gates (`isFeatureUnlocked`)
 - **Routes**: Express route handlers (thin controllers)
   - `auth.js` - Authentication (login, PIN setup, token validation, children)
   - `questions.js` - Question bank operations
   - `claude.js` - AI generation, marking, study reports, and learning profiles
-  - `progress.js` - Progress tracking, spaced repetition, weekly streaks
+  - `progress.js` - Progress tracking, spaced repetition, weekly streaks, quests, reward state
   - `gamification.js` - XP, coins, achievements endpoints
 - **DAL**: Data access layer (all DB operations)
   - `auth.js` - Login profiles, PIN management, parent-child queries
@@ -413,6 +436,7 @@ Comprehensive review addressing 24 issues across security, bugs, performance, an
   - `reports.js` - Test sessions, test reports, learning profiles
   - `gamification.js` - XP, levels, coins, achievements, unlock checking
   - `tokens.js` - Token balance, rewards, daily caps, test history, conversion rates
+  - `quests.js` - Quest assignment, progress tracking, reward state, daily/comeback bonuses
 - **DB**: Database setup
   - `index.js` - SQLite singleton with WAL mode
   - `schema.sql` - Table definitions

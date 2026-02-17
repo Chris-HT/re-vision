@@ -34,7 +34,8 @@ const alterStatements = [
   'ALTER TABLE profiles ADD COLUMN literal_language INTEGER DEFAULT 0',
   'ALTER TABLE profiles ADD COLUMN focus_mode INTEGER DEFAULT 0',
   'ALTER TABLE profiles ADD COLUMN break_interval INTEGER DEFAULT 15',
-  "ALTER TABLE profiles ADD COLUMN session_preset TEXT DEFAULT 'standard'"
+  "ALTER TABLE profiles ADD COLUMN session_preset TEXT DEFAULT 'standard'",
+  'ALTER TABLE profiles ADD COLUMN variable_rewards INTEGER DEFAULT 1'
 ];
 for (const sql of alterStatements) {
   try { db.exec(sql); } catch (e) {
@@ -120,6 +121,36 @@ db.exec(`
   );
 `);
 
+// Quest system tables
+db.exec(`
+  CREATE TABLE IF NOT EXISTS quest_definitions (
+    id TEXT PRIMARY KEY,
+    type TEXT NOT NULL,
+    title TEXT NOT NULL,
+    description TEXT NOT NULL,
+    target INTEGER NOT NULL,
+    metric TEXT NOT NULL,
+    xp_reward INTEGER DEFAULT 25,
+    coin_reward INTEGER DEFAULT 15
+  );
+  CREATE TABLE IF NOT EXISTS profile_quests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    profile_id TEXT NOT NULL,
+    quest_id TEXT NOT NULL,
+    progress INTEGER DEFAULT 0,
+    completed INTEGER DEFAULT 0,
+    assigned_date TEXT NOT NULL,
+    completed_at TEXT,
+    UNIQUE(profile_id, quest_id, assigned_date)
+  );
+  CREATE TABLE IF NOT EXISTS profile_reward_state (
+    profile_id TEXT PRIMARY KEY,
+    last_session_date TEXT,
+    daily_bonus_used TEXT,
+    variable_rewards INTEGER DEFAULT 1
+  );
+`);
+
 // Seed achievements
 const seedAchievements = [
   ['first-card',    'First Steps',    'Review your first card',    '👶', 'cards',   1],
@@ -138,6 +169,24 @@ const insertAchievement = db.prepare(
 );
 for (const a of seedAchievements) {
   insertAchievement.run(...a);
+}
+
+// Seed quest definitions
+const seedQuests = [
+  ['daily-session',    'daily',  'Complete 1 study session',        'Finish any study session today',          1,  'sessions_completed',  25, 15],
+  ['daily-cards-10',   'daily',  'Review 10 cards',                 'Review 10 flashcards today',              10, 'cards_reviewed',      25, 15],
+  ['daily-correct-5',  'daily',  'Answer 5 questions correctly',    'Get 5 correct answers today',             5,  'correct_answers',     25, 15],
+  ['daily-correct-15', 'daily',  'Answer 15 questions correctly',   'Get 15 correct answers today',            15, 'correct_answers',     40, 25],
+  ['daily-test',       'daily',  'Complete a test',                 'Finish a dynamic test today',             1,  'tests_completed',     30, 20],
+  ['daily-score-80',   'daily',  'Score 80%+ on a test',            'Achieve 80% or higher on any test today', 1,  'score_above_80',      40, 25],
+  ['weekly-tests-3',   'weekly', 'Complete 3 tests this week',      'Finish 3 dynamic tests this week',        3,  'tests_completed',     75, 50],
+  ['weekly-subjects-2','weekly', 'Study 2 different subjects',      'Study at least 2 subjects this week',     2,  'subjects_studied',    60, 40],
+];
+const insertQuest = db.prepare(
+  'INSERT OR IGNORE INTO quest_definitions (id, type, title, description, target, metric, xp_reward, coin_reward) VALUES (?, ?, ?, ?, ?, ?, ?, ?)'
+);
+for (const q of seedQuests) {
+  insertQuest.run(...q);
 }
 
 export default db;

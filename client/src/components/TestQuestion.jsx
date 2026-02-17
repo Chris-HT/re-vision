@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { apiFetch } from '../utils/api';
 import { useGamification } from '../context/GamificationContext';
 
@@ -18,15 +18,20 @@ export default function TestQuestion({
   const [markingResult, setMarkingResult] = useState(null);
   const [error, setError] = useState(null);
 
+  // Lucky question: 5% chance, determined once per question instance
+  const isLucky = useMemo(() => gam?.variableRewards && Math.random() < 0.05, []);
+
   const awardForScore = (score) => {
     if (!gam) return;
     if (score >= 70) {
       gam.awardXP(15);
-      gam.awardCoins(8);
+      const coinAward = isLucky ? 16 : 8;
+      gam.awardCoins(coinAward, isLucky ? `+${coinAward} coins (Lucky 2x!)` : undefined);
       gam.incrementCombo();
     } else if (score >= 40) {
       gam.awardXP(8);
-      gam.awardCoins(3);
+      const coinAward = isLucky ? 6 : 3;
+      gam.awardCoins(coinAward, isLucky ? `+${coinAward} coins (Lucky 2x!)` : undefined);
       gam.resetCombo();
     } else {
       gam.awardXP(3);
@@ -113,6 +118,11 @@ export default function TestQuestion({
             Question {questionNumber} of {totalQuestions}
           </span>
           <div className="flex items-center space-x-2">
+            {isLucky && (
+              <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-yellow-500 text-yellow-900 border border-yellow-300">
+                Lucky! 2x Coins
+              </span>
+            )}
             <span className="text-xs" style={{ color: 'var(--text-secondary)' }}>
               Difficulty: {Array(question.difficulty || 2).fill('⭐').join('')}
             </span>

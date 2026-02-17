@@ -29,6 +29,16 @@ export default function FlashcardDeck({
   const progress = (totalAnswered / questions.length) * 100;
   const hasAnswerForCurrent = answers[currentIndex] !== undefined;
 
+  // Lucky question: 5% chance per card, determined once per card index
+  const [luckyCards] = useState(() => {
+    const lucky = new Set();
+    for (let i = 0; i < questions.length; i++) {
+      if (Math.random() < 0.05) lucky.add(i);
+    }
+    return lucky;
+  });
+  const isLuckyQuestion = gam?.variableRewards && luckyCards.has(currentIndex);
+
   // Derive score counts from answers map
   const scores = useMemo(() => {
     const counts = { correct: 0, missed: 0, skipped: 0 };
@@ -110,10 +120,12 @@ export default function FlashcardDeck({
 
     // Gamification awards per card
     if (gam) {
+      const lucky = isLuckyQuestion;
       if (type === 'correct') {
         gam.incrementCombo();
         gam.awardXP(10, '+10 XP');
-        gam.awardCoins(5, '+5 coins');
+        const coinAward = lucky ? 10 : 5;
+        gam.awardCoins(coinAward, lucky ? '+10 coins (Lucky 2x!)' : '+5 coins');
       } else {
         gam.resetCombo();
         gam.awardXP(3, '+3 XP');
@@ -217,6 +229,11 @@ export default function FlashcardDeck({
                 secondsLeft={activeTimer.secondsLeft}
                 percentRemaining={activeTimer.percentRemaining}
               />
+            )}
+            {isLuckyQuestion && (
+              <span className="px-3 py-1 rounded-full text-sm font-bold bg-yellow-500 text-yellow-900 border-2 border-yellow-300">
+                Lucky! 2x Coins
+              </span>
             )}
             <span className={`px-3 py-1 rounded-full text-sm font-medium ${categoryInfo?.bgClass} text-white`}>
               {currentCard.category}

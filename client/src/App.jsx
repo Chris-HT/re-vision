@@ -109,7 +109,7 @@ function App() {
 
   return (
     <ThemeProvider initialTheme={theme} initialFontSize={fontSize} initialReduceAnimations={reduceAnimations} initialLiteralLanguage={literalLanguage} initialFocusMode={focusMode}>
-      <GamificationProvider profileId={profile?.id}>
+      <GamificationProvider profileId={profile?.id} ageGroup={profile?.ageGroup}>
         <StudyTimerProvider breakInterval={breakInterval}>
           <AppContent profile={profile} onLogout={handleLogout} setProfile={setProfile} />
         </StudyTimerProvider>

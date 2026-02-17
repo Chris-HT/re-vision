@@ -8,6 +8,7 @@ import TestConfig from '../components/TestConfig';
 import TestQuestion from '../components/TestQuestion';
 import TestResults from '../components/TestResults';
 import SessionPreview from '../components/SessionPreview';
+import StepIndicator from '../components/StepIndicator';
 
 export default function DynamicTest({ profile }) {
   const navigate = useNavigate();
@@ -161,9 +162,15 @@ export default function DynamicTest({ profile }) {
     );
   }
 
+  const stepIndex = { config: 0, preview: 1, testing: 2, results: 3 }[testState] ?? 0;
+
   return (
     <div className="min-h-screen py-8" style={{ background: 'linear-gradient(to bottom right, var(--gradient-from), var(--gradient-to))' }}>
       <div className="container mx-auto px-4">
+        <div className="max-w-3xl mx-auto mb-2">
+          <StepIndicator steps={['Configure', 'Preview', 'Test', 'Results']} currentStep={stepIndex} />
+        </div>
+
         {testState === 'config' && (
           <>
             <div className="mb-8 max-w-2xl mx-auto">

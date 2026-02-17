@@ -3,6 +3,12 @@ import {
   getProgress, recordCardReview, getDueCards, getDetailedStats, getWeeklyStreak
 } from '../dal/progress.js';
 import { awardXP, awardCoins, checkAndUnlockAchievements } from '../dal/gamification.js';
+import {
+  assignDailyQuests, assignWeeklyQuest, getActiveQuests,
+  incrementQuestProgress,
+  getRewardState, checkComebackBonus, checkDailyBonus, markDailyBonusUsed,
+  updateLastSessionDate
+} from '../dal/quests.js';
 import { canAccessProfile } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -45,7 +51,16 @@ router.put('/progress/:profileId/card/:cardId', (req, res, next) => {
     }
     const newAchievements = checkAndUnlockAchievements(profileId);
 
-    res.json({ success: true, card, stats, gamification: { xp: xpResult, coins: coinsResult, newAchievements } });
+    // Quest progress: cards reviewed + correct answers
+    const questCompleted = [];
+    try {
+      questCompleted.push(...incrementQuestProgress(profileId, 'cards_reviewed', 1));
+      if (result === 'correct') {
+        questCompleted.push(...incrementQuestProgress(profileId, 'correct_answers', 1));
+      }
+    } catch { /* quest system non-critical */ }
+
+    res.json({ success: true, card, stats, gamification: { xp: xpResult, coins: coinsResult, newAchievements, questCompleted } });
   } catch (error) {
     next(error);
   }
@@ -92,6 +107,54 @@ router.get('/progress/:profileId/weekly-streak', (req, res, next) => {
     }
     const streak = getWeeklyStreak(profileId);
     res.json(streak);
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/progress/:profileId/quests
+router.get('/progress/:profileId/quests', (req, res, next) => {
+  try {
+    const { profileId } = req.params;
+    if (!canAccessProfile(req.user, profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    // Auto-assign if needed
+    assignDailyQuests(profileId);
+    assignWeeklyQuest(profileId);
+    const quests = getActiveQuests(profileId);
+    res.json({ quests });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// GET /api/progress/:profileId/reward-state
+router.get('/progress/:profileId/reward-state', (req, res, next) => {
+  try {
+    const { profileId } = req.params;
+    if (!canAccessProfile(req.user, profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    const state = getRewardState(profileId);
+    const comeback = checkComebackBonus(profileId);
+    const dailyBonus = checkDailyBonus(profileId);
+    res.json({ ...state, comebackBonus: comeback, dailyBonus });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/progress/:profileId/daily-bonus-used
+router.post('/progress/:profileId/daily-bonus-used', (req, res, next) => {
+  try {
+    const { profileId } = req.params;
+    if (!canAccessProfile(req.user, profileId)) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    markDailyBonusUsed(profileId);
+    updateLastSessionDate(profileId);
+    res.json({ success: true });
   } catch (error) {
     next(error);
   }

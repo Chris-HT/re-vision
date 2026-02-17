@@ -10,7 +10,9 @@
       "Bash(npm run dev:*)",
       "Bash(npx kill-port 3001)",
       "Bash(taskkill:*)",
-      "Bash(npx kill-port:*)"
+      "Bash(npx kill-port:*)",
+      "Bash(npm run build:*)",
+      "WebSearch"
     ],
     "deny": [],
     "ask": []
