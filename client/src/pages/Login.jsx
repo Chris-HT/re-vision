@@ -157,6 +157,7 @@ export default function Login({ onLogin }) {
             </div>
 
             <PinInput
+              key={mode === 'set-pin' ? (confirmPin ? 'confirm' : 'create') : 'login'}
               length={4}
               onComplete={mode === 'set-pin' ? handleSetPin : handleLogin}
               error={error}
