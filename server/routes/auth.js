@@ -1,7 +1,7 @@
 import express from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { getProfileForLogin, setPin, getLoginProfiles, getChildren } from '../dal/auth.js';
+import { getProfileForLogin, setPin, getLoginProfiles, getChildren, getAllProfiles, createProfile, updateProfile, deleteProfile } from '../dal/auth.js';
 import { authenticate, requireRole, getJwtSecret } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -209,4 +209,110 @@ router.get('/children', authenticate, requireRole('admin', 'parent'), (req, res,
   }
 });
 
+
+// GET /api/auth/profiles/all — admin: list all profiles
+router.get('/profiles/all', authenticate, requireRole('admin'), (req, res, next) => {
+  try {
+    res.json({ profiles: getAllProfiles() });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// POST /api/auth/profiles — admin: create new profile
+router.post('/profiles', authenticate, requireRole('admin'), (req, res, next) => {
+  try {
+    const { name, icon, role, age_group, default_subjects, parent_id } = req.body;
+    if (!name || !icon || !role || !age_group) {
+      return res.status(400).json({ error: 'name, icon, role, and age_group are required' });
+    }
+    if (name.length < 2 || name.length > 30) {
+      return res.status(400).json({ error: 'Name must be 2–30 characters' });
+    }
+    if (!['admin', 'parent', 'child'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+    if (!['adult', 'secondary', 'primary'].includes(age_group)) {
+      return res.status(400).json({ error: 'Invalid age_group' });
+    }
+    if (role === 'child' && !parent_id) {
+      return res.status(400).json({ error: 'parent_id is required for child accounts' });
+    }
+    if (role === 'child' && parent_id) {
+      const parentProfile = getProfileForLogin(parent_id);
+      if (!parentProfile) {
+        return res.status(400).json({ error: 'Parent profile not found' });
+      }
+    }
+    const id = createProfile({ name, icon, role, age_group, default_subjects, parent_id });
+    res.status(201).json({ id });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// PUT /api/auth/profiles/:id — admin: update profile
+router.put('/profiles/:id', authenticate, requireRole('admin'), (req, res, next) => {
+  try {
+    const id = req.params.id;
+    const { name, icon, role, age_group, default_subjects, parent_id } = req.body;
+    if (!name || !icon || !role || !age_group) {
+      return res.status(400).json({ error: 'name, icon, role, and age_group are required' });
+    }
+    if (name.length < 2 || name.length > 30) {
+      return res.status(400).json({ error: 'Name must be 2–30 characters' });
+    }
+    if (!['admin', 'parent', 'child'].includes(role)) {
+      return res.status(400).json({ error: 'Invalid role' });
+    }
+    if (!['adult', 'secondary', 'primary'].includes(age_group)) {
+      return res.status(400).json({ error: 'Invalid age_group' });
+    }
+    if (role === 'child' && !parent_id) {
+      return res.status(400).json({ error: 'parent_id is required for child accounts' });
+    }
+    if (role === 'child' && parent_id) {
+      const parentProfile = getProfileForLogin(parent_id);
+      if (!parentProfile) {
+        return res.status(400).json({ error: 'Parent profile not found' });
+      }
+    }
+    const existing = getProfileForLogin(id);
+    if (!existing) return res.status(404).json({ error: 'Profile not found' });
+    if (existing.role === 'admin' && role !== 'admin') {
+      const adminCount = getAllProfiles().filter(p => p.role === 'admin').length;
+      if (adminCount <= 1) {
+        return res.status(400).json({ error: 'Cannot change role: this is the only admin account' });
+      }
+    }
+    updateProfile(id, { name, icon, role, age_group, default_subjects, parent_id });
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
+// DELETE /api/auth/profiles/:id — admin: delete profile + all data
+router.delete('/profiles/:id', authenticate, requireRole('admin'), (req, res, next) => {
+  try {
+    const id = req.params.id;
+    if (id === String(req.user.profileId)) {
+      return res.status(403).json({ error: 'You cannot delete your own account' });
+    }
+    const existing = getProfileForLogin(id);
+    if (!existing) return res.status(404).json({ error: 'Profile not found' });
+    if (existing.role === 'admin') {
+      const adminCount = getAllProfiles().filter(p => p.role === 'admin').length;
+      if (adminCount <= 1) {
+        return res.status(400).json({ error: 'Cannot delete: this is the only admin account' });
+      }
+    }
+    deleteProfile(id);
+    res.json({ success: true });
+  } catch (error) {
+    next(error);
+  }
+});
+
 export default router;
+

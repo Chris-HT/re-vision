@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiFetch } from '../utils/api';
+import UserManagementPanel from '../components/UserManagementPanel';
 
 export default function FamilyDashboard({ profile }) {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export default function FamilyDashboard({ profile }) {
   const [editingRate, setEditingRate] = useState({});
   const [rateInputs, setRateInputs] = useState({});
   const [loading, setLoading] = useState(true);
+  const [showUserMgmt, setShowUserMgmt] = useState(false);
 
   useEffect(() => {
     if (!profile || (profile.role !== 'admin' && profile.role !== 'parent')) {
@@ -92,9 +94,22 @@ export default function FamilyDashboard({ profile }) {
     <div className="min-h-screen py-8">
       <div className="container mx-auto px-4">
         <div className="max-w-4xl mx-auto">
-          <div className="mb-8">
-            <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Family Dashboard</h1>
-            <p style={{ color: 'var(--text-secondary)' }}>Monitor your children's learning progress</p>
+          <div className="mb-8 flex items-start justify-between">
+            <div>
+              <h1 className="text-3xl font-bold mb-2" style={{ color: 'var(--text-primary)' }}>Family Dashboard</h1>
+              <p style={{ color: 'var(--text-secondary)' }}>Monitor your children's learning progress</p>
+            </div>
+            {profile.role === 'admin' && (
+              <button
+                onClick={() => setShowUserMgmt(true)}
+                className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white text-sm font-medium rounded-lg transition-colors flex items-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+                Manage Users
+              </button>
+            )}
           </div>
 
           {children.length === 0 ? (
@@ -311,6 +326,12 @@ export default function FamilyDashboard({ profile }) {
             </div>
           )}
         </div>
+        {showUserMgmt && (
+          <UserManagementPanel
+            currentProfileId={profile.id}
+            onClose={() => setShowUserMgmt(false)}
+          />
+        )}
       </div>
     </div>
   );
