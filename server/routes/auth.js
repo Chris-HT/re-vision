@@ -301,6 +301,12 @@ router.delete('/profiles/:id', authenticate, requireRole('admin'), (req, res, ne
     }
     const existing = getProfileForLogin(id);
     if (!existing) return res.status(404).json({ error: 'Profile not found' });
+    if (existing.role === 'admin') {
+      const adminCount = getAllProfiles().filter(p => p.role === 'admin').length;
+      if (adminCount <= 1) {
+        return res.status(400).json({ error: 'Cannot delete: this is the only admin account' });
+      }
+    }
     deleteProfile(id);
     res.json({ success: true });
   } catch (error) {
