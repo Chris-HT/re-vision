@@ -29,7 +29,7 @@ export default function SmartReview({ profile }) {
       studyTimer.stopStudying();
     }
     return () => { if (studyTimer) studyTimer.stopStudying(); };
-  }, [!!sessionQuestions, showResults]);
+  }, [sessionQuestions, showResults, studyTimer]);
 
   useEffect(() => {
     if (!profile) {

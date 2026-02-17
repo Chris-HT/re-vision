@@ -44,7 +44,7 @@ export default function Flashcards({ profile }) {
       studyTimer.stopStudying();
     }
     return () => { if (studyTimer) studyTimer.stopStudying(); };
-  }, [!!sessionQuestions, showResults]);
+  }, [sessionQuestions, showResults, studyTimer]);
 
   const { questions, categories, loading, error } = useQuestions(
     config.subject,

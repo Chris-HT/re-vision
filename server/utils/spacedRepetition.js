@@ -41,7 +41,7 @@ export function updateCard(card, result) {
     } else {
       card.interval = Math.round(card.interval * card.easeFactor);
     }
-    card.easeFactor = Math.max(1.3, card.easeFactor + 0.1);
+    card.easeFactor = Math.min(2.5, Math.max(1.3, card.easeFactor + 0.1));
   } else if (result === 'incorrect') {
     card.repetitions = 0;
     card.interval = 1;

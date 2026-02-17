@@ -16,7 +16,7 @@ export default function BreakReminder() {
       clearInterval(countdownRef.current);
     }
     return () => clearInterval(countdownRef.current);
-  }, [takingBreak, breakCountdown > 0]);
+  }, [takingBreak, breakCountdown]);
 
   if (!timer || (!timer.breakDue && !takingBreak)) return null;
 

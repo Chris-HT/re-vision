@@ -109,7 +109,7 @@ export function deleteProfile(id) {
       'profile_xp', 'subject_xp', 'profile_coins', 'coin_transactions',
       'profile_achievements', 'profile_quests', 'profile_reward_state',
       'profile_tokens', 'token_transactions', 'token_test_history',
-      'weekly_streaks', 'test_sessions', 'test_reports', 'learning_profiles'
+      'weekly_streaks', 'test_reports', 'test_sessions', 'learning_profiles'
     ];
     for (const table of tables) {
       db.prepare(`DELETE FROM ${table} WHERE profile_id = ?`).run(profileId);

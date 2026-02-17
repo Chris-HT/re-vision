@@ -3,6 +3,8 @@
  */
 
 function toDateString(isoString) {
+  // Uses server local time. Pi must be set to the user's timezone for correct streak dates:
+  //   sudo timedatectl set-timezone Europe/London
   const d = new Date(isoString);
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }

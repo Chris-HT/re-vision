@@ -64,7 +64,7 @@ export default function DynamicTest({ profile }) {
       studyTimer.stopStudying();
     }
     return () => { if (studyTimer) studyTimer.stopStudying(); };
-  }, [testState]);
+  }, [testState, studyTimer]);
 
   const handleStartTest = (data) => {
     setTestData(data);

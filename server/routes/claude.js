@@ -593,7 +593,7 @@ CRITICAL: Return ONLY valid JSON. No markdown, no code fences, no explanation.
     updateLearningProfile(profileId, reportData, topic);
 
     // Gamification: award test completion bonus
-    const xpResult = awardXP(profileId, 50);
+    let xpResult = awardXP(profileId, 50);
     awardCoins(profileId, 20, 'test-completion');
     const newAchievements = checkAndUnlockAchievements(profileId);
 

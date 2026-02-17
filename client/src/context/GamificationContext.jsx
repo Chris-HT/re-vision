@@ -29,6 +29,10 @@ export function GamificationProvider({ profileId, ageGroup, children }) {
   const pendingCoins = useRef(0);
   const idCounter = useRef(0);
 
+  // Ref for combo so awardXP always reads the current value even when called
+  // immediately after incrementCombo() in the same event handler (before re-render)
+  const comboRef = useRef(0);
+
   const fetchGamification = useCallback(async () => {
     if (!profileId) return;
     try {
@@ -79,6 +83,7 @@ export function GamificationProvider({ profileId, ageGroup, children }) {
 
   useEffect(() => {
     fetchGamification();
+    comboRef.current = 0;
     setCombo(0);
     setRewardQueue([]);
     pendingXp.current = 0;
@@ -102,7 +107,9 @@ export function GamificationProvider({ profileId, ageGroup, children }) {
   }, []);
 
   const awardXP = useCallback((amount, label) => {
-    const multiplier = getComboMultiplier(combo);
+    // Use comboRef for the current combo value — avoids stale closure when
+    // incrementCombo() and awardXP() are called together in the same event handler
+    const multiplier = getComboMultiplier(comboRef.current);
     let finalAmount = Math.round(amount * multiplier);
 
     // Daily bonus: 2x XP on first XP award of the session
@@ -119,33 +126,39 @@ export function GamificationProvider({ profileId, ageGroup, children }) {
     }
 
     pendingXp.current += finalAmount;
-
     setXp(prev => prev + finalAmount);
-    setXpProgress(prev => {
-      const newProgress = prev + finalAmount;
-      if (newProgress >= xpRequired) {
-        // Level up
-        const overflow = newProgress - xpRequired;
-        setLevel(l => {
-          const newLevel = l + 1;
-          // Approximate next level XP requirement
-          setXpRequired(Math.floor(100 * Math.pow(1.5, newLevel - 1)));
-          pushReward({ type: 'level-up', amount: newLevel, label: `Level ${newLevel}` });
 
-          // Progressive disclosure unlock notifications (non-adult)
+    // Compute level-up iteratively so large awards spanning multiple levels are handled correctly
+    setXpProgress(prev => {
+      let newProgress = prev + finalAmount;
+      let currentReq = xpRequired;
+      let levelsGained = 0;
+
+      while (newProgress >= currentReq) {
+        newProgress -= currentReq;
+        levelsGained++;
+        // xpRequired for the level after the one we're about to set
+        currentReq = Math.floor(100 * Math.pow(1.5, (level + levelsGained) - 1));
+      }
+
+      if (levelsGained > 0) {
+        const newLevel = level + levelsGained;
+        setLevel(newLevel);
+        setXpRequired(currentReq);
+        for (let i = 1; i <= levelsGained; i++) {
+          const gainedLevel = level + i;
+          pushReward({ type: 'level-up', amount: gainedLevel, label: `Level ${gainedLevel}` });
           if (ageGroup && ageGroup !== 'adult') {
-            if (newLevel === 3) {
+            if (gainedLevel === 3) {
               pushReward({ type: 'unlock', label: 'Quests Unlocked!', description: 'You can now track daily and weekly quests' });
             }
-            if (newLevel === 5) {
+            if (gainedLevel === 5) {
               pushReward({ type: 'unlock', label: 'Achievements & Streaks Unlocked!', description: 'View your achievements and streak progress' });
             }
           }
-
-          return newLevel;
-        });
-        return overflow;
+        }
       }
+
       return newProgress;
     });
 
@@ -157,7 +170,7 @@ export function GamificationProvider({ profileId, ageGroup, children }) {
         : label || `+${finalAmount} XP`;
       pushReward({ type: 'xp', amount: finalAmount, label: displayLabel });
     }
-  }, [combo, xpRequired, getComboMultiplier, pushReward, dailyBonusActive, profileId, ageGroup]);
+  }, [level, xpRequired, getComboMultiplier, pushReward, dailyBonusActive, profileId, ageGroup]);
 
   const awardCoins = useCallback((amount, label) => {
     pendingCoins.current += amount;
@@ -166,10 +179,12 @@ export function GamificationProvider({ profileId, ageGroup, children }) {
   }, [pushReward]);
 
   const incrementCombo = useCallback(() => {
+    comboRef.current += 1;
     setCombo(c => c + 1);
   }, []);
 
   const resetCombo = useCallback(() => {
+    comboRef.current = 0;
     setCombo(0);
   }, []);
 

@@ -142,7 +142,7 @@ export default function FlashcardDeck({
     }
 
     if (currentIndex < questions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
+      setCurrentIndex(prev => prev + 1);
       setIsFlipped(false);
     } else {
       // All cards answered or at the end - sync gamification and derive results

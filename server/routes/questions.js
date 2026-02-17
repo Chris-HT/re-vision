@@ -87,8 +87,8 @@ router.post('/generate/save', requireRole('admin'), (req, res, next) => {
   }
 });
 
-// GET /api/subjects/:subjectId/export - Export a complete subject bundle
-router.get('/subjects/:subjectId/export', (req, res, next) => {
+// GET /api/subjects/:subjectId/export - Export a complete subject bundle (admin only)
+router.get('/subjects/:subjectId/export', requireRole('admin'), (req, res, next) => {
   try {
     const { subjectId } = req.params;
     const bundle = exportSubject(subjectId);

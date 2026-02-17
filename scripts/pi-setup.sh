@@ -23,11 +23,15 @@ else
   echo "PM2 already installed: $(pm2 --version)"
 fi
 
-# 3. Install build tools (needed for better-sqlite3 native addon)
+# 3. Set system timezone (required for correct streak date calculations)
+echo "Setting timezone to Europe/London..."
+sudo timedatectl set-timezone Europe/London
+
+# 4. Install build tools (needed for better-sqlite3 native addon)
 echo "Installing build tools for native modules..."
 sudo apt-get install -y build-essential python3
 
-# 4. Clone repo (if not already cloned)
+# 5. Clone repo (if not already cloned)
 APP_DIR="$HOME/revision"
 if [ ! -d "$APP_DIR" ]; then
   echo "Cloning RE-VISION repository..."
@@ -40,16 +44,16 @@ fi
 
 cd "$APP_DIR"
 
-# 5. Install dependencies
+# 6. Install dependencies
 echo "Installing dependencies..."
 npm run install-all
 
-# 6. Build client
+# 7. Build client
 echo "Building client..."
 mkdir -p logs
 npm run build
 
-# 7. Set up .env file
+# 8. Set up .env file
 if [ ! -f .env ]; then
   echo ""
   echo "Enter your Anthropic API key (or press Enter to skip):"
@@ -62,16 +66,16 @@ if [ ! -f .env ]; then
   fi
 fi
 
-# 8. Run migration
+# 9. Run migration
 echo "Running JSON → SQLite migration..."
 node server/db/migrate-json.js
 
-# 9. Start with PM2
+# 10. Start with PM2
 echo "Starting RE-VISION with PM2..."
 pm2 start ecosystem.config.cjs
 pm2 save
 
-# 10. Set up PM2 to start on boot
+# 11. Set up PM2 to start on boot
 echo "Setting up auto-start on boot..."
 pm2 startup | tail -1 | bash 2>/dev/null || echo "Run the pm2 startup command shown above manually if it failed"
 
