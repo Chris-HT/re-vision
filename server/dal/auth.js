@@ -49,3 +49,61 @@ export function isParentOf(parentId, childId) {
   ).get(parentId, childId);
   return !!row;
 }
+
+export function getAllProfiles() {
+  return db.prepare(
+    'SELECT id, name, icon, age_group, role, pin_hash FROM profiles ORDER BY id'
+  ).all();
+}
+
+export function createProfile({ name, icon, role, age_group, default_subjects, parent_id }) {
+  const insert = db.prepare(
+    `INSERT INTO profiles (name, icon, age_group, role, default_subjects, theme, font_size)
+     VALUES (?, ?, ?, ?, ?, 'dark', 'medium')`
+  );
+  const result = insert.run(
+    name,
+    icon,
+    age_group,
+    role,
+    JSON.stringify(default_subjects || [])
+  );
+  const newId = result.lastInsertRowid;
+
+  if (parent_id && role === 'child') {
+    db.prepare('INSERT OR IGNORE INTO parent_child (parent_id, child_id) VALUES (?, ?)').run(parent_id, newId);
+  }
+
+  return newId;
+}
+
+export function updateProfile(id, { name, icon, role, age_group, default_subjects, parent_id }) {
+  db.prepare(
+    `UPDATE profiles SET name = ?, icon = ?, age_group = ?, role = ?, default_subjects = ? WHERE id = ?`
+  ).run(name, icon, age_group, role, JSON.stringify(default_subjects || []), id);
+
+  // Re-create parent link
+  db.prepare('DELETE FROM parent_child WHERE child_id = ?').run(id);
+  if (parent_id && role === 'child') {
+    db.prepare('INSERT INTO parent_child (parent_id, child_id) VALUES (?, ?)').run(parent_id, id);
+  }
+}
+
+export function deleteProfile(id) {
+  const cascade = db.transaction((profileId) => {
+    const tables = [
+      'card_progress', 'card_history', 'profile_stats',
+      'profile_xp', 'subject_xp', 'profile_coins', 'coin_transactions',
+      'profile_achievements', 'profile_quests', 'profile_reward_state',
+      'profile_tokens', 'token_transactions', 'token_test_history',
+      'weekly_streaks', 'test_sessions', 'test_reports', 'learning_profiles'
+    ];
+    for (const table of tables) {
+      db.prepare(`DELETE FROM ${table} WHERE profile_id = ?`).run(profileId);
+    }
+    // parent_child: remove as either parent or child
+    db.prepare('DELETE FROM parent_child WHERE parent_id = ? OR child_id = ?').run(profileId, profileId);
+    db.prepare('DELETE FROM profiles WHERE id = ?').run(profileId);
+  });
+  cascade(id);
+}
